@@ -10,7 +10,7 @@
 #include <Wire.h>
 
 /***** USER PARAMETERS *****/
-int i2c_ids_[] = {118, 119};
+int i2c_ids_[] = {118,119};
 int ir_current_ = 8; // range = [0, 20]. current = value * 10 mA
 int ambient_light_measurement_rate_ = 7; // range = [0, 7]. 1, 2, 3, 4, 5, 6, 8, 10 samples per second
 int ambient_light_auto_offset_ = 1; // on or off
