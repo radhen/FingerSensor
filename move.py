@@ -21,7 +21,6 @@ import getAccEff
 import time
 import re
 import serial 
-#ser = serial.Serial('/dev/ttyACM0',115200)
 
 stopCollectingData = False
 dataCollectLock = threading.Lock()
