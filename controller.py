@@ -9,7 +9,6 @@ import numpy as np
 
 from __future__ import division, print_function
 import numpy as np
->>>>>>> 93628e441ad2ef0155c460ed7f4fa4d65723e496
 import rospy
 import baxter_interface
 from std_msgs.msg import Int32MultiArray, Float64
