@@ -17,8 +17,40 @@ from baxter_interface import CHECK_VERSION
 
 import getAccEff
 import time
+<<<<<<< HEAD
 import serial
 from controller import Controller
+=======
+import re
+import serial 
+
+stopCollectingData = False
+dataCollectLock = threading.Lock()
+
+def collectData():
+    with serial.Serial('/dev/ttyACM0',115200) as ser:
+        with open('data.txt', 'a') as myfile:
+            try:
+                while True:
+                    s = ''
+                    ser.write(b'm')
+                    line = ser.readline()
+                    #s = repr(timestamp)
+                    line = re.sub(' +',',',line)
+                    line = re.sub('\r\n','',line)
+                    pre = line.split(",")
+                    for _i in range(1,17,1):
+                        s=s+' '+pre[_i]
+                    print(s)
+                    myfile.writelines(s + '\n')
+                    with dataCollectLock:
+                        if stopCollectingdata:
+                            break
+            except KeyboardInterrupt:
+                1+1
+            except Exception:
+                1+1
+>>>>>>> 93628e441ad2ef0155c460ed7f4fa4d65723e496
 
 
 class CuffOKButton(object):
