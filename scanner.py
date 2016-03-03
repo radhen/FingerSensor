@@ -21,7 +21,7 @@ limb.set_joint_position_speed(0.5)
 limb.move_to_joint_positions(angles)
 
 # Initialize serial port
-ser = serial.Serial('/dev/ttyACM3',115200)
+ser = serial.Serial('/dev/ttyACM1',115200)
 print(ser.name)
 
 try:

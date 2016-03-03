@@ -12,43 +12,13 @@ from baxter_core_msgs.msg import DigitalIOState
 
 import tf
 
-import threading
-
 from baxter_pykdl import baxter_kinematics
 from baxter_interface import CHECK_VERSION
 
 import getAccEff
 import time
-import re
-import serial 
-#ser = serial.Serial('/dev/ttyACM0',115200)
-
-stopCollectingData = False
-dataCollectLock = threading.Lock()
-
-def collectData():
-    with serial.Serial('/dev/ttyACM0',115200) as ser:
-        with open('data.txt', 'a') as myfile:
-            try:
-                while True:
-                    s = ''
-                    ser.write(b'm')
-                    line = ser.readline()
-                    #s = repr(timestamp)
-                    line = re.sub(' +',',',line)
-                    line = re.sub('\r\n','',line)
-                    pre = line.split(",")
-                    for _i in range(1,17,1):
-                        s=s+' '+pre[_i]
-                    print(s)
-                    myfile.writelines(s + '\n')
-                    with dataCollectLock:
-                        if stopCollectingdata:
-                            break
-            except KeyboardInterrupt:
-                1+1
-            except Exception:
-                1+1
+import serial
+from controller import Controller
 
 
 class CuffOKButton(object):
@@ -101,17 +71,23 @@ class Baxter(object):
         # Calibrate gripper
         self.gripper.calibrate()
 
-    def pick(self, pose, direction=(0, 0, 1), distance=0.1):
+    def pick(self, pose, direction=(0, 0, 1), distance=0.1, controller=None):
         """Go to pose + pick_direction * pick_distance, open, go to pose,
         close, go to pose + pick_direction * pick_distance.
 
         """
+        print(pose)
         pregrasp_pose = self.translate(pose, direction, distance)
+        print(pregrasp_pose)
         self.move_ik(pregrasp_pose)
         # We want to block end effector opening so that the next
         # movement happens with the gripper fully opened.
         self.gripper.open(block=True)
         self.move_ik(pose)
+        if controller is not None:
+            controller.enable()
+            rospy.sleep(5)
+            controller.disable()
         self.gripper.close(block=True)
         self.move_ik(pregrasp_pose)
 
@@ -143,15 +119,8 @@ class Baxter(object):
 
         """
         stamped_pose = self.to_stamped_pose(pose)
-        #print("stamped_pose"),
-        #print(stamped_pose)
         joint_pose = self.ik_quaternion(stamped_pose)
-        if joint_pose != None:
-            #print("joint_pose"),
-            #print(joint_pose)
-            return self.limb.move_to_joint_positions(joint_pose)
-        else:
-            return None
+        return self.limb.move_to_joint_positions(joint_pose)
 
     @staticmethod
     def to_stamped_pose(pose):
@@ -260,7 +229,7 @@ class Baxter(object):
     def map_keyboard(self):
         # initialize interfaces
         print("Getting robot state... ")
-        rs = baxter_interface.RobotEnable(CHECK_VERSION)
+        rs = baxter_intercontrollerface.RobotEnable(CHECK_VERSION)
         init_state = rs.state().enabled
         limb_0 = baxter_interface.Gripper(self.limb_name, CHECK_VERSION)
 
@@ -319,12 +288,11 @@ def main(limb_name, reset):
         to save new ones by using 0g mode and the OK cuff buttons.
     """
     # Initialise ros node
-    rospy.init_node("pick_and_place", anonymous=True)
+    rospy.init_node("pick_and_place", anonymous=False)
 
     # Either load picking and placing poses from the parameter server
     # or save them using the 0g mode and the circular buttons on
     # baxter's cuffs
-    #reset = True
     if reset or not rospy.has_param('~pick_and_place_poses'):
         rospy.loginfo(
             'Saving picking pose for %s limb' % limb_name)
@@ -343,21 +311,27 @@ def main(limb_name, reset):
         pick_pose = rospy.get_param('~pick_and_place_poses/pick')
         place_pose = rospy.get_param('~pick_and_place_poses/place')
 
-    getDataThread = threading.Thread(target=collectData)
-    getAccThread = threading.Thread(target=getAccEff.startPrinting)
+    #getDataThread = threading.Thread(target=collectData)
+    #getAccThread = threading.Thread(target=getAccEff.startPrinting)
 
-    with dataCollectLock:
-        stopCollectingData = False
+    #with dataCollectLock:
+        #stopCollectingData = False
     b = Baxter(limb_name)
-    getDataThread.start()
-    getAccThread.start()
-    b.pick(pick_pose)
+    #start collecting data
+    #getDataThread.start()
+    #getAccThread.start()
+
+    c = Controller()
+
+    b.pick(pick_pose, controller=c)
     b.place(place_pose)
-    with dataCollectLock:
-        stopCollectingData = True
-    getDataThread.join()
-    getAccThread.join()
-    
+
+    #with dataCollectLock:
+        #stopCollectingData = True
+    #start collecting data
+    #getDataThread.join()
+    #getAccThread.join()
+
 
 if __name__ == "__main__":
     import argparse
@@ -368,7 +342,7 @@ if __name__ == "__main__":
         '-l', '--limb', choices=('left', 'right'), default='left',
         help='Choose which limb to use for picking and placing')
     parser.add_argument(
-        '-r', '--reset', action='store_true', default=False) #
+        '-r', '--reset', action='store_true', default=False)
 
     args = parser.parse_args(rospy.myargv()[1:])
 

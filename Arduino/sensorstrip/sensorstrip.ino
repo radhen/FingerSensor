@@ -63,15 +63,17 @@ void setup()
 
 void loop()
 {
-  int incomingbyte = Serial.read();
-  if(incomingbyte == 'm'){
-  // Read sensor values
-  for (int i = 0; i < num_devices_; i++)
-  {
-    readSensorStripValues(i2c_ids_[i]);
-    delay(0);
-  }
-  Serial.println();
+  if (Serial.available() > 0) {
+    int incomingbyte = Serial.read();
+    if(incomingbyte == 'm'){
+    // Read sensor values
+    for (int i = 0; i < num_devices_; i++)
+    {
+      readSensorStripValues(i2c_ids_[i]);
+      delay(0);
+    }
+    Serial.println();
+    }
   }
 }
 
