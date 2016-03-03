@@ -20,9 +20,8 @@ import time
 <<<<<<< HEAD
 import serial
 from controller import Controller
-=======
 import re
-import serial 
+import serial
 
 stopCollectingData = False
 dataCollectLock = threading.Lock()
@@ -50,7 +49,6 @@ def collectData():
                 1+1
             except Exception:
                 1+1
->>>>>>> 93628e441ad2ef0155c460ed7f4fa4d65723e496
 
 
 class CuffOKButton(object):
