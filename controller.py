@@ -37,17 +37,17 @@ class Controller(object):
 
     def disable(self):
         self.sensor_subscriber.unregister()
-        rospy.init_node('baxter_controller')
-        self.limb_name = 'left'
-        self.other_limb_name = 'right'
-        self.limb = baxter_interface.Limb(self.limb_name)
-        self.sensor_subscriber = rospy.Subscriber('/sensor_values',
-                                                 Int32MultiArray,
-                                                 self.control)
+        #rospy.init_node('baxter_controller')
+        #self.limb_name = 'left'
+        #self.other_limb_name = 'right'
+        #self.limb = baxter_interface.Limb(self.limb_name)
+        #self.sensor_subscriber = rospy.Subscriber('/sensor_values',
+                                                 #Int32MultiArray,
+                                                 #self.control)
 
-        self.err_pub = rospy.Publisher('/error', Float64, queue_size=1)
-        self.P = P
-        self.jinv = baxter_kinematics(self.limb_name).jacobian_pseudo_inverse()
+        #self.err_pub = rospy.Publisher('/error', Float64, queue_size=1)
+        #self.P = P
+        #self.jinv = baxter_kinematics(self.limb_name).jacobian_pseudo_inverse()
 
     def control(self, msg):
         values = msg.data

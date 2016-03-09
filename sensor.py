@@ -31,8 +31,7 @@ def sensor_node():
     rate = rospy.Rate(20)
     while not rospy.is_shutdown():
         values = next(c)
-        msg = Int32MultiArray(MultiArrayLayout([MultiArrayDimension('', 16, 1)], 1),
-                              values)
+        msg = Int32MultiArray(MultiArrayLayout([MultiArrayDimension('', 16, 1)], 1), values)
         pub.publish(msg)
         rate.sleep()
 

@@ -1,30 +1,25 @@
 #!/usr/bin/env python
 from __future__ import division, print_function
-
 from itertools import chain, repeat
-
 import rospy
 import baxter_interface
 import baxter_external_devices
 from moveit_commander import conversions
 from baxter_core_msgs.srv import SolvePositionIK, SolvePositionIKRequest
 from baxter_core_msgs.msg import DigitalIOState
-
 import tf
-
 from baxter_pykdl import baxter_kinematics
 from baxter_interface import CHECK_VERSION
-
 import getAccEff
 import time
-<<<<<<< HEAD
 import serial
 from controller import Controller
+from getAccEff import FilterValues
 import re
-import serial
+import matplotlib.pyplot as plt
 
-stopCollectingData = False
-dataCollectLock = threading.Lock()
+#stopCollectingData = False
+#dataCollectLock = threading.Lock()
 
 def collectData():
     with serial.Serial('/dev/ttyACM0',115200) as ser:
@@ -294,17 +289,6 @@ class Baxter(object):
                 else:
                     print("Not implement it yet...")
 
-                    # cmd = self.bindings[c]
-                    # cmd[0](*cmd[1])
-                    # print("command: %s" % (cmd[2],))
-                # else:
-                #     print("key bindings: ")
-                    # print("  Esc: Quit")
-                    # print("  ?: Help")
-                    # for key, val in sorted(self.bindings.items(),
-                    #                        key=lambda x: x[1][2]):
-                    #     print("  %s: %s" % (key, val[2]))
-        # force shutdown call if caught by key handler
         rospy.signal_shutdown("Move.py finished.")
 
 def main(limb_name, reset):
@@ -350,11 +334,17 @@ def main(limb_name, reset):
     #start collecting data
     #getDataThread.start()
     #getAccThread.start()
-
     c = Controller()
+
+    f = FilterValues()
+    f.start_recording()
 
     b.pick(pick_pose, controller=c)
     b.place(place_pose)
+
+    f.stop_recording()
+    f.filter()
+    f.plot()
 
     #with dataCollectLock:
         #stopCollectingData = True
