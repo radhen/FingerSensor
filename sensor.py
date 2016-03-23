@@ -6,14 +6,14 @@ import rospy
 from std_msgs.msg import Int32MultiArray, MultiArrayLayout, MultiArrayDimension
 
 def collect_data():
-    with serial.Serial('/dev/ttyACM1', 115200, timeout=0.2) as ser:
+    with serial.Serial('/dev/ttyACM0', 115200, timeout=0.2) as ser:
             while True:
                 ser.write(b'm')
                 values = [int(i) for i in ser.readline().strip().split()]
                 if len(values) != 16:
                     continue
                 yield values
-    with serial.Serial('/dev/ttyACM1',115200) as ser:
+    with serial.Serial('/dev/ttyACM0',115200) as ser:
             try:
                 while True:
                     ser.write(b'm')

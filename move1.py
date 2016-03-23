@@ -71,7 +71,7 @@ class Baxter(object):
         # Calibrate gripper
         self.gripper.calibrate()
 
-    def pick(self, pose, direction=(0, 0, 1), distance=0.1, controller=None):
+    def pick(self, pose, direction=(-1, 0, 0), distance=0.1, controller=None):
         """Go to pose + pick_direction * pick_distance, open, go to pose,
         close, go to pose + pick_direction * pick_distance.
 
@@ -79,33 +79,31 @@ class Baxter(object):
         print(pose)
         pregrasp_pose = self.translate(pose, direction, distance)
         print(pregrasp_pose)
-        self.limb.set_joint_position_speed(0.1)
         self.move_ik(pregrasp_pose)
         # We want to block end effector opening so that the next
         # movement happens with the gripper fully opened.
         self.gripper.open(block=True)
-        self.limb.set_joint_position_speed(0.05)
-        self.move_ik(pose)
+        #self.limb.set_joint_position_speed(0.05)
+        #self.move_ik(pose)
         if controller is not None:
             controller.enable()
             rospy.sleep(5)
             controller.disable()
         self.gripper.close(block=True)
+        self.limb.set_joint_position_speed(0.2)
         #self.gripper.open(block=True)
-        self.move_ik(pregrasp_pose)
+        #self.move_ik(pregrasp_pose)
 
-    def place(self, pose, direction=(0, 0, 1), distance=0.1):
+    def place(self, pose, direction=(-1, 0, 0), distance=0.2):
         """Go to pose + place_direction * place_distance, go to pose,
         open, go to pose + pick_direction * pick_distance.
 
         """
-        pregrasp_pose = self.translate(pose, direction, distance)
-        self.limb.set_joint_position_speed(0.1)
-        self.move_ik(pregrasp_pose)
-        self.limb.set_joint_position_speed(0.05)
+        #pregrasp_pose = self.translate(pose, direction, distance)
+        #self.move_ik(pregrasp_pose)
         self.move_ik(pose)
-        self.gripper.open(block=True)
-        self.move_ik(pregrasp_pose)
+        #self.gripper.open(block=True)
+        #self.move_ik(pregrasp_pose)
 
     def move(self, direction, distance):
         """Go to pose + place_direction * place_distance.
@@ -229,7 +227,7 @@ class Baxter(object):
                                                           pose2[3:]).tolist()
         return xyz + qxqyqzqw
 
-        # map some keys to the actions like move forward, backward, left, right, up and
+        # map some keys to the actions like move forward, backward,https://studywolf.wordpress.com/2013/09/02/robot-control-jacobians-velocity-and-force/ left, right, up and
         # down a little
     def map_keyboard(self):
         # initialize interfaces
@@ -283,15 +281,19 @@ def main(limb_name, reset):
     """
     # Initialise ros node
     rospy.init_node("pick_and_place", anonymous=False)
-    #pick_pose = []
-    #place_pose = []
-    #for ii in range(3):
+
+    # Either load picking and placing poses from the parameter server
+    # or save them using the 0g mode and the circular buttons on
+    # baxter's cuffs
     if reset or not rospy.has_param('~pick_and_place_poses'):
         rospy.loginfo(
             'Saving picking pose for %s limb' % limb_name)
         pick_pose = limb_pose(limb_name)
         rospy.sleep(1)
         place_pose = limb_pose(limb_name)
+        # Parameter server can't store numpy arrays, so make sure
+        # they're lists of Python floats (specifically not
+        # numpy.float64's). I feel that's a bug in rospy.set_param.
         rospy.set_param('~pick_and_place_poses',
                         {'pick': pick_pose.tolist(),
                          'place': place_pose.tolist()})
@@ -299,7 +301,7 @@ def main(limb_name, reset):
         #rospy.loginfo('place_pose is %s' % place_pose)
     else:
         pick_pose = rospy.get_param('~pick_and_place_poses/pick')
-        place_pose =  rospy.get_param('~pick_and_place_poses/place')
+        place_pose = rospy.get_param('~pick_and_place_poses/place')
 
     #getDataThread = threading.Thread(target=collectData)
     #getAccThread = threading.Thread(target=getAccEff.startPrinting)
@@ -311,15 +313,16 @@ def main(limb_name, reset):
     #getDataThread.start()
     #getAccThread.start()
     c = Controller()
-    f = FilterValues()
-    f.start_recording()
-    #for ii in range(3):
-    b.pick(pick_pose, controller=None)
-    b.place(place_pose)
-    f.stop_recording()
-    f.filter()
-    f.plot()
-    #rospy.spin()
+    #f = FilterValues()
+    #f.start_recording()
+    for i in range(10):
+        b.pick(pick_pose, controller=c)
+        #b.limb.set_joint_position_speed(0.1)
+        b.place(place_pose)
+    #f.stop_recording()
+    #f.filter()
+    #f.plot()
+    rospy.spin()
     #with dataCollectLock:
         #stopCollectingData = True
     #start collecting data

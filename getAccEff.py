@@ -65,7 +65,7 @@ class FilterValues(object):
 		self.Fgr = np.sum(self.values[:,9:15], axis=1) #SAI
 		self.Fgl = np.sum(self.values[:,0:7], axis=1) #SAI
 
-		b1, a1 = signal.butter(1, 1, 'high', analog=False) #pi rad/samples
+		b1, a1 = signal.butter(1, 0.55, 'high', analog=False) #pi rad/samples
 		self.f_acc_x = signal.lfilter(b1, a1, self.acc_x, axis=-1, zi=None)
 		self.f_acc_y = signal.lfilter(b1, a1, self.acc_y, axis=-1, zi=None)
 		self.f_acc_z = signal.lfilter(b1, a1, self.acc_z, axis=-1, zi=None)
@@ -83,21 +83,21 @@ class FilterValues(object):
 
 	def plot(self):
 		plt.figure(1)
-		plt.subplot(511)
+		plt.subplot(411)
 		plt.ylabel('GripperAperture')
 		plt.plot(self.gripperAperture,'c')
-		plt.subplot(512)
-		plt.ylabel('Left&Right_SensorValues')
+		plt.subplot(412)
+		plt.ylabel('SA-I channel')
 		plt.plot(self.Fgl,'y',self.Fgr,'k') #SAI
-		plt.subplot(513)
-		plt.ylabel('FAI_channel')
+		plt.subplot(413)
+		plt.ylabel('FA-I channel')
 		plt.plot(self.FAI,'m')
-		plt.subplot(514)
-		plt.ylabel('FAII_channel')
+		plt.subplot(414)
+		plt.ylabel('FA-II channel')
 		plt.plot(self.FAII)
-		plt.subplot(515)
-		plt.ylabel('EndEffector_Effort')
-		plt.plot(self.eff,'r')
+		#plt.subplot(515)
+		#plt.ylabel('EndEffector_Effort')
+		#plt.plot(self.eff,'r')
 		plt.show()
 
 
@@ -108,7 +108,9 @@ if __name__ == "__main__":
 	f.start_recording()
 	rospy.sleep(3)
 	f.stop_recording()
-	f.filter()
+	print f.values
+	#f.filter()
+
 	#print f.gripperAperture
-	#f.plot()
+
 	#plt.plot(np.array(f.time3),f.FAI)
