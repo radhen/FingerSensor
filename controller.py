@@ -39,6 +39,7 @@ class Controller(object):
                                                  Int32MultiArray,
                                                  self.control,
                                                  queue_size=1)
+                                            
 
     def disable(self):
         self.sensor_subscriber.unregister()
@@ -60,13 +61,13 @@ class Controller(object):
         #err1 = error1(values)
         #err1 = error1(values) #fingertip sensor error
         #print (err1)
-        y_v = -np.clip(self.P * (err), -0.1, 0.1)
+        y_v = np.clip(self.P * (err), -0.05, 0.05)
         self.err_pub.publish(y_v)
-        cartesian_v = [0, y_v, 0, 0, 0, 0]
+        cartesian_v = [0.02, y_v, 0, 0, 0, 0]
         joint_v = self.compute_joint_velocities(cartesian_v, self.jinv)
         self.limb.set_joint_velocities(joint_v)
 
-    def compute_joint_velocities(self, cartesian_velocities, jinv):
+    def compute_joint_velocities(self, cartesian_velocities, jinv=None):
         if jinv is None:
             self.jinv = self.kinematics.jacobian_pseudo_inverse()
         joint_v = np.squeeze(np.asarray(self.jinv.dot(cartesian_velocities)))

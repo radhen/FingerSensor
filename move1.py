@@ -79,7 +79,8 @@ class Baxter(object):
         print(pose)
         pregrasp_pose = self.translate(pose, direction, distance)
         print(pregrasp_pose)
-        self.move_ik(pregrasp_pose)
+        self.limb.set_joint_position_speed(0.1)
+        self.move_ik(pose)
         # We want to block end effector opening so that the next
         # movement happens with the gripper fully opened.
         self.gripper.open(block=True)
@@ -87,10 +88,10 @@ class Baxter(object):
         #self.move_ik(pose)
         if controller is not None:
             controller.enable()
-            rospy.sleep(5)
+            rospy.sleep(4)
             controller.disable()
+        rospy.sleep(1)
         self.gripper.close(block=True)
-        self.limb.set_joint_position_speed(0.2)
         #self.gripper.open(block=True)
         #self.move_ik(pregrasp_pose)
 
@@ -101,6 +102,7 @@ class Baxter(object):
         """
         #pregrasp_pose = self.translate(pose, direction, distance)
         #self.move_ik(pregrasp_pose)
+        self.limb.set_joint_position_speed(0.1)
         self.move_ik(pose)
         #self.gripper.open(block=True)
         #self.move_ik(pregrasp_pose)
@@ -114,7 +116,7 @@ class Baxter(object):
         print(pose)
         pregrasp_pose = self.translate(pose, direction, distance)
         print(pregrasp_pose)
-        self.move_ik(pregrasp_pose)
+        self.move_ik(pregrasp_ppythonse)
 
     def move_ik(self, pose):
         """Take a pose (either xyz rpy or xyz qxqyqzqw) and move the arm
@@ -280,7 +282,7 @@ def main(limb_name, reset):
         to save new ones by using 0g mode and the OK cuff buttons.
     """
     # Initialise ros node
-    rospy.init_node("pick_and_place", anonymous=False)
+    rospy.init_node("pick_and_place", anonymous=False)[]
 
     # Either load picking and placing poses from the parameter server
     # or save them using the 0g mode and the circular buttons on

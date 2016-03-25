@@ -3,6 +3,8 @@ import baxter_interface
 from baxter_pykdl import baxter_kinematics
 import numpy as np
 
+# give endpoint velocity commands to baxter 
+
 class velocity(object):
     def __init__(self):
         self.limb_name = 'left'
