@@ -18,6 +18,7 @@ from controller_1 import Controller_1
 from getAccEff import FilterValues
 import re
 import matplotlib.pyplot as plt
+import random
 
 #stopCollectingData = False
 #dataCollectLock = threading.Lock()
@@ -53,6 +54,7 @@ def limb_pose(limb_name):
     # coordinates using forward kinematics.
     kinematics = baxter_kinematics(limb_name)
     endpoint_pose = kinematics.forward_position_kinematics(joint_pose)
+    #print (endpoint_pose)
     return endpoint_pose
 
 
@@ -77,9 +79,9 @@ class Baxter(object):
         close, go to pose + pick_direction * pick_distance.
 
         """
-        print(pose)
+        #print(pose)
         pregrasp_pose = self.translate(pose, direction, distance)
-        print(pregrasp_pose)
+        #print(pregrasp_pose)
         self.limb.set_joint_position_speed(0.2)
         rospy.sleep(1)
         self.move_ik(pregrasp_pose)
@@ -124,7 +126,7 @@ class Baxter(object):
         print(pose)
         pregrasp_pose = self.translate(pose, direction, distance)
         print(pregrasp_pose)
-        self.move_ik(pregrasp_ppythonse)
+        self.move_ik(pregrasp_pose)
 
     def move_ik(self, pose):
         """Take a pose (either xyz rpy or xyz qxqyqzqw) and move the arm
@@ -316,7 +318,8 @@ def main(limb_name, reset):
     #getDataThread = threading.Thread(target=collectData)
     #getAccThread = threading.Thread(target=getAccEff.startPrinting)
 
-    #with dataCollectLock:
+
+     #with dataCollectLock:
         #stopCollectingData = False
     b = Baxter(limb_name)
     #start collecting data
@@ -326,7 +329,13 @@ def main(limb_name, reset):
     c1 = Controller_1()
     #f = FilterValues()
     #f.start_recording()
-    for i in range(10):
+    for i in range(20):
+        print ('this iss the intial pick pose')
+        pick_pose[1]= 0.2607970049081359
+        print (pick_pose)
+        #pick_pose[1] = 0.30986200091872873
+        pick_pose[1] += random.uniform(-1,1)*0.07 ##introduce error in endposition (y direction)
+        print (pick_pose)
         b.pick(pick_pose, controller=c, controller_1=c1)
         #b.limb.set_joint_position_speed(0.1)
         b.place(place_pose)
