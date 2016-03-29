@@ -21,15 +21,15 @@ def error1(sensor_values): #alignment with fingertip sensor
     return err1
 
 
-class Controller(object):
-    def __init__(self, Pt=1/30000):
+class Controller_1(object):
+    def __init__(self, P=1/400000):
 
         self.limb_name = 'left'
         self.other_limb_name = 'right'
         self.limb = baxter_interface.Limb(self.limb_name)
         self.err_pub = rospy.Publisher('/error', Float64, queue_size=1)
-        #self.P = P
-        self.Pt = Pt
+        self.P = P
+        self.Pt = 1/400000
         self.kinematics = baxter_kinematics(self.limb_name)
         self.jinv = self.kinematics.jacobian_pseudo_inverse()
         #print(self.jinv)
@@ -58,14 +58,14 @@ class Controller(object):
 
     def control(self, msg):
         values = msg.data
-        #err = error(values)
-        err1 = error1(values)
+        err = error(values)
+        #err1 = error1(values)
         #err1 = error1(values) #fingertip sensor error
         #print (err1)
-        #y_v = np.clip(self.P * (err), -0.05, 0.08)
-        y_t = -np.clip(self.Pt * (err1), -0.025, 0.025)
-        self.err_pub.publish(y_t)
-        cartesian_v = [0.018, y_t, 0, 0, 0, 0]
+        y_v = np.clip(self.P * (err), -0.08, 0.08)
+        #y_t = np.clip(self.Pt * (err), -0.3, 0.3)
+        self.err_pub.publish(y_v)
+        cartesian_v = [0.0, y_v, 0, 0, 0, 0]
         joint_v = self.compute_joint_velocities(cartesian_v, self.jinv)
         self.limb.set_joint_velocities(joint_v)
 
@@ -85,7 +85,7 @@ class Controller(object):
 
 if __name__ == '__main__':
     rospy.init_node('baxter_controller')
-    c = Controller()
-    c.enable()
+    c1 = Controller_1()
+    c1.enable()
     #c = Controller()
     rospy.spin()

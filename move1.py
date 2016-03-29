@@ -14,6 +14,7 @@ import getAccEff
 import time
 import serial
 from controller import Controller
+from controller_1 import Controller_1
 from getAccEff import FilterValues
 import re
 import matplotlib.pyplot as plt
@@ -71,7 +72,7 @@ class Baxter(object):
         # Calibrate gripper
         self.gripper.calibrate()
 
-    def pick(self, pose, direction=(-1, 0, 0), distance=0.1, controller=None):
+    def pick(self, pose, direction=(-1, 0, 0), distance=0.1, controller=None, controller_1 = None):
         """Go to pose + pick_direction * pick_distance, open, go to pose,
         close, go to pose + pick_direction * pick_distance.
 
@@ -79,18 +80,25 @@ class Baxter(object):
         print(pose)
         pregrasp_pose = self.translate(pose, direction, distance)
         print(pregrasp_pose)
-        self.limb.set_joint_position_speed(0.1)
-        self.move_ik(pose)
+        self.limb.set_joint_position_speed(0.2)
+        rospy.sleep(1)
+        self.move_ik(pregrasp_pose)
         # We want to block end effector opening so that the next
         # movement happens with the gripper fully opened.
         self.gripper.open(block=True)
-        #self.limb.set_joint_position_speed(0.05)
+        self.limb.set_joint_position_speed(0.05)
         #self.move_ik(pose)
         if controller is not None:
+            #print ('controller is there!!')
             controller.enable()
-            rospy.sleep(4)
+            rospy.sleep(5)
             controller.disable()
-        rospy.sleep(1)
+        if controller_1 is not None:
+            print ('SECOND controller is there!!')
+            controller_1.enable()
+            rospy.sleep(5)
+            controller_1.disable()
+        #rospy.sleep(1)
         self.gripper.close(block=True)
         #self.gripper.open(block=True)
         #self.move_ik(pregrasp_pose)
@@ -102,7 +110,7 @@ class Baxter(object):
         """
         #pregrasp_pose = self.translate(pose, direction, distance)
         #self.move_ik(pregrasp_pose)
-        self.limb.set_joint_position_speed(0.1)
+        self.limb.set_joint_position_speed(0.2)
         self.move_ik(pose)
         #self.gripper.open(block=True)
         #self.move_ik(pregrasp_pose)
@@ -282,7 +290,7 @@ def main(limb_name, reset):
         to save new ones by using 0g mode and the OK cuff buttons.
     """
     # Initialise ros node
-    rospy.init_node("pick_and_place", anonymous=False)[]
+    rospy.init_node("pick_and_place", anonymous=False)
 
     # Either load picking and placing poses from the parameter server
     # or save them using the 0g mode and the circular buttons on
@@ -315,10 +323,11 @@ def main(limb_name, reset):
     #getDataThread.start()
     #getAccThread.start()
     c = Controller()
+    c1 = Controller_1()
     #f = FilterValues()
     #f.start_recording()
     for i in range(10):
-        b.pick(pick_pose, controller=c)
+        b.pick(pick_pose, controller=c, controller_1=c1)
         #b.limb.set_joint_position_speed(0.1)
         b.place(place_pose)
     #f.stop_recording()
