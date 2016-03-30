@@ -91,8 +91,9 @@ class Baxter(object):
             rospy.sleep(5)
             controller.disable()
         self.gripper.close(block=True)
-        #self.gripper.open(block=True)
-        self.move_ik(pregrasp_pose)
+        #self.gripper.command_position(45, block=True)
+        rospy.sleep(1)
+        #self.move_ik(pregrasp_pose)
 
     def place(self, pose, direction=(0, 0, 1), distance=0.1):
         """Go to pose + place_direction * place_distance, go to pose,
@@ -104,8 +105,10 @@ class Baxter(object):
         self.move_ik(pregrasp_pose)
         self.limb.set_joint_position_speed(0.05)
         self.move_ik(pose)
-        self.gripper.open(block=True)
+        rospy.sleep(1)
+        self.gripper.command_position(100, block=True)
         self.move_ik(pregrasp_pose)
+        self.gripper.command_position(100, block=True)
 
     def move(self, direction, distance):
         """Go to pose + place_direction * place_distance.

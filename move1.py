@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+#repeated grasp attemtps. uses controller and controller_1
 from __future__ import division, print_function
 from itertools import chain, repeat
 import rospy
