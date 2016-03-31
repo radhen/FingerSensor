@@ -56,28 +56,20 @@ class FilterValues(object):
 		self.sub4.unregister()
 
 	def filter(self):
-		self.gripperAperture = np.array(self.gripperAperture)
-		self.eff = np.array(self.eff)
-		self.values = np.array(self.values)
-		self.acc_x = np.array(self.acc_x)
-		self.acc_y = np.array(self.acc_y)
-		self.acc_z = np.array(self.acc_z)
-
 		self.Fgr = np.sum(self.values[:,9:15], axis=1) #SAI
 		self.Fgl = np.sum(self.values[:,0:7], axis=1) #SAI
 
-		np.savetxt('SAI_Fgr.txt', self.Fgr)
-		np.savetxt('SAI_Fgl.txt', self.Fgl)
-		np.savetxt('gripperAperture.txt', self.gripperAperture)
+		np.savetxt('SAI_Fgr.txt', self.Fgr) #can use this to plot in matlab graspeventdetection_plot.m
+		np.savetxt('SAI_Fgl.txt', self.Fgl) #can use this to plot in matlab
 
-		b1, a1 = signal.butter(1, 0.65, 'high', analog=False) #0.55*pi rad/samples
+		b1, a1 = signal.butter(1, 0.55, 'high', analog=False) #0.55*pi rad/samples
 		self.f_acc_x = signal.lfilter(b1, a1, self.acc_x, axis=-1, zi=None)
 		self.f_acc_y = signal.lfilter(b1, a1, self.acc_y, axis=-1, zi=None)
 		self.f_acc_z = signal.lfilter(b1, a1, self.acc_z, axis=-1, zi=None)
 		#self.f_eff = signal.lfilter(b1, a1, self.eff, axis=-1, zi=None)
 		#type(eff)
 		self.FAII = np.sqrt(np.square(self.f_acc_x) + np.square(self.f_acc_y) + np.square(self.f_acc_z))
-		np.savetxt('FAII.txt', self.FAII)
+		np.savetxt('FAII.txt', self.FAII) #can use this to plot in matlab
 
 		#subtract base values from the values array
 		self.values1 = self.values - self.values.min(axis=0)
@@ -86,48 +78,95 @@ class FilterValues(object):
 		b, a = signal.butter(1, 0.48, 'high', analog=False) #0.48*pi rad/samples
 		for i in range(16): self.fvalues1[:,i] = signal.lfilter(b, a, self.values1[:,i], axis=-1, zi=None)
 		self.FAI = np.sum(self.fvalues1, axis=1)
-		np.savetxt('FAI.txt', self.FAI)
+		np.savetxt('FAI.txt', self.FAI) #can use this to plot in matlab
 
 	def plot(self):
 		plt.figure(1)
-		plt.subplot(411)
+		plt.subplot(511)
 		plt.ylabel('GripperAperture')
 		#print (self.gripperAperture.shape[0])
 		xgripper = np.linspace(0,(self.gripperAperture.shape[0]/20),self.gripperAperture.shape[0])
 		plt.plot(xgripper,self.gripperAperture,'c')
 
-		plt.subplot(412)
+		plt.subplot(512)
+		plt.ylabel('error')
+		xFAII = np.linspace(0,(self.centeringerr.shape[0]/18.78),self.centeringerr.shape[0])
+		plt.plot(xFAII, self.centeringerr)
+
+		plt.subplot(513)
 		plt.ylabel('SA-I channel')
 		xFg = np.linspace(0,(self.Fgl.shape[0]/18.78),self.Fgl.shape[0])
 		plt.plot(xFg,self.Fgl,'y',xFg,self.Fgr,'k') #SAI
 
-		plt.subplot(413)
+		plt.subplot(514)
 		plt.ylabel('FA-I channel')
 		xFAI = np.linspace(0,(self.FAI.shape[0]/18.78),self.FAI.shape[0])
 		plt.plot(xFAI, self.FAI,'m')
 
-		plt.subplot(414)
+		plt.subplot(515)
 		plt.ylabel('FA-II channel')
 		xFAII = np.linspace(0,(self.FAII.shape[0]/100),self.FAII.shape[0])
 		plt.plot(xFAII, self.FAII)
+
+		#plt.subplot(414)
+		#plt.ylabel('aX')
+		#xFAII = np.linspace(0,(self.f_acc_x.shape[0]/100),self.f_acc_x.shape[0])
+		#plt.plot(xFAII, self.f_acc_x)
+
+		#plt.subplot(514)
+		#plt.ylabel('aY')
+		#xFAII = np.linspace(0,(self.f_acc_y.shape[0]/100),self.f_acc_y.shape[0])
+		#plt.plot(xFAII, self.f_acc_y)
+
+		#plt.subplot(515)
+		#plt.ylabel('aZ')
+		#xFAII = np.linspace(0,(self.f_acc_z.shape[0]/100),self.f_acc_z.shape[0])
+		#plt.plot(xFAII, self.f_acc_z)
 
 		#plt.subplot(515)
 		#plt.ylabel('EndEffector_Effort')
 		#plt.plot(self.eff,'r')
 		plt.show()
 
+	def load_data(self):
+		#load recorded data
+		self.acc_x = np.loadtxt('acc_x.txt')
+		#print type(self.acc_x)
+		self.acc_y = np.loadtxt('acc_y.txt')
+		self.acc_z = np.loadtxt('acc_z.txt')
+		self.values = np.loadtxt('values.txt')
+		self.gripperAperture = np.loadtxt('gripperAperture.txt')
+		self.centeringerr = np.loadtxt('centeringerr.txt')
+
+	def convertandsave(self):
+		#conver to numpy array and save
+		self.gripperAperture = np.array(self.gripperAperture)
+		np.savetxt('gripperAperture.txt', self.gripperAperture)
+
+		self.eff = np.array(self.eff)
+
+		self.acc_x = np.array(self.acc_x)
+		np.savetxt('acc_x.txt', self.acc_x)
+
+		self.acc_y = np.array(self.acc_y)
+		np.savetxt('acc_y.txt', self.acc_y)
+
+		self.acc_z = np.array(self.acc_z)
+		np.savetxt('acc_z.txt', self.acc_z)
+
+		self.values = np.array(self.values)
+		np.savetxt('values.txt', self.values)
+
 
 
 if __name__ == "__main__":
 	rospy.init_node('AccEff_listener')
 	f=FilterValues()
-	f.start_recording()
-	rospy.sleep(3)
-	f.stop_recording()
+	#f.start_recording()
+	#rospy.sleep(3)
+	#f.stop_recording()
 	#print f.values
+	#f.convertandsave()
+	f.load_data()
 	f.filter()
 	f.plot()
-
-	#print f.gripperAperture
-
-	#plt.plot(np.array(f.time3),f.FAI)

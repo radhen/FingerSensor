@@ -16,6 +16,7 @@ import time
 import serial
 from controller import Controller
 from controller_1 import Controller_1
+from controller_2 import Controller_2
 from getAccEff import FilterValues
 import re
 import matplotlib.pyplot as plt
@@ -75,7 +76,7 @@ class Baxter(object):
         # Calibrate gripper
         self.gripper.calibrate()
 
-    def pick(self, pose, direction=(-1, 0, 0), distance=0.1, controller=None, controller_1 = None):
+    def pick(self, pose, direction=(-1, 0, 0), distance=0.1, controller=None, controller_1 = None, controller_2=None):
         """Go to pose + pick_direction * pick_distance, open, go to pose,
         close, go to pose + pick_direction * pick_distance.
 
@@ -84,47 +85,56 @@ class Baxter(object):
         pregrasp_pose = self.translate(pose, direction, distance)
         #print(pregrasp_pose)
         self.limb.set_joint_position_speed(0.2)
-        rospy.sleep(1)
+        #rospy.sleep(1)
         self.move_ik(pregrasp_pose)
         # We want to block end effector opening so that the next
         # movement happens with the gripper fully opened.
         self.gripper.open(block=True)
-        self.limb.set_joint_position_speed(0.05)
+        self.limb.set_joint_position_speed(0.08)
         #self.move_ik(pose)
         if controller is not None:
-            #print ('controller is there!!')
+            print ('controller is there!!')
             controller.enable()
             rospy.sleep(5)
             controller.disable()
+        if controller_2 is not None:
+            print ('controller_2 is there!!')
+            controller_2.enable()
+            rospy.sleep(5)
+            controller_2.disable()
+
         if controller_1 is not None:
-            print ('SECOND controller is there!!')
+            print ('controller_1 is there!!')
             controller_1.enable()
             rospy.sleep(5)
             controller_1.disable()
         #rospy.sleep(1)
-        self.gripper.close(block=True)
+        #self.gripper.close(block=True)
+        #rospy.sleep(2)
         #self.gripper.open(block=True)
         #self.move_ik(pregrasp_pose)
 
-    def place(self, pose, direction=(-1, 0, 0), distance=0.2):
+    def place(self, pose, direction=(-1, 0, 0), distance=0.1):
         """Go to pose + place_direction * place_distance, go to pose,
         open, go to pose + pick_direction * pick_distance.
 
         """
         #pregrasp_pose = self.translate(pose, direction, distance)
+        #self.limb.set_joint_position_speed(0.05)
         #self.move_ik(pregrasp_pose)
+        #self.move((1,0,0),0.1)
         self.limb.set_joint_position_speed(0.2)
         self.move_ik(pose)
         #self.gripper.open(block=True)
         #self.move_ik(pregrasp_pose)
 
-    def move(self, direction, distance):
+    def move(self, pose, direction=(-1,0,0), distance=0.1):
         """Go to pose + place_direction * place_distance.
 
         """
-        pose = limb_pose(self.limb_name)
+        #pose = limb_pose(self.limb_name)
         # rospy.loginfo("limb pose is %d" %pose)
-        print(pose)
+        #print(pose)
         pregrasp_pose = self.translate(pose, direction, distance)
         print(pregrasp_pose)
         self.move_ik(pregrasp_pose)
@@ -328,17 +338,18 @@ def main(limb_name, reset):
     #getAccThread.start()
     c = Controller()
     c1 = Controller_1()
+    c2 = Controller_2()
     #f = FilterValues()
     #f.start_recording()
     for i in range(20):
         print ('this iss the intial pick pose')
-        pick_pose[1]= 0.2607970049081359
+        pick_pose[1]= 0.25286245 #change this for every new exp
         print (pick_pose)
         #pick_pose[1] = 0.30986200091872873
-        pick_pose[1] += random.uniform(-1,1)*0.07 ##introduce error in endposition (y direction)
+        pick_pose[1] += random.uniform(-1,1)*0.00 ##introduce error in endposition (y axis)
+        print ('ERROR introduced the intial pick pose')
         print (pick_pose)
-        b.pick(pick_pose, controller=c, controller_1=c1)
-        #b.limb.set_joint_position_speed(0.1)
+        b.pick(pick_pose, controller=c, controller_1=None, controller_2 = c2)
         b.place(place_pose)
     #f.stop_recording()
     #f.filter()

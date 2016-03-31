@@ -6,4 +6,4 @@ ylabel ('No. of success grasp', 'fontsize', 14)
 axis([0 8 0 23])
 grid on 
 legend('Controller', 'No controller')
-print('graspsuccess_barplot','-dpng')
+%print('graspsuccess_barplot','-dpng')

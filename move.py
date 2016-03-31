@@ -1,4 +1,7 @@
 #!/usr/bin/env python
+
+##TYPICAL PICK AND PLACE DEMO
+#initalize with pick and place poses (options: initalize || choose previous ones)
 from __future__ import division, print_function
 from itertools import chain, repeat
 import rospy
@@ -13,7 +16,7 @@ from baxter_interface import CHECK_VERSION
 import getAccEff
 import time
 import serial
-from controller import Controller
+from controller_1 import Controller_1
 from getAccEff import FilterValues
 import re
 import matplotlib.pyplot as plt
@@ -87,12 +90,13 @@ class Baxter(object):
         self.limb.set_joint_position_speed(0.05)
         self.move_ik(pose)
         if controller is not None:
+            print ('controller ON!!')
             controller.enable()
             rospy.sleep(5)
             controller.disable()
         self.gripper.close(block=True)
         #self.gripper.command_position(45, block=True)
-        rospy.sleep(1)
+        rospy.sleep(2)
         #self.move_ik(pregrasp_pose)
 
     def place(self, pose, direction=(0, 0, 1), distance=0.1):
@@ -313,13 +317,16 @@ def main(limb_name, reset):
     #start collecting data
     #getDataThread.start()
     #getAccThread.start()
-    c = Controller()
+    c1 = Controller_1()
     f = FilterValues()
     f.start_recording()
     #for ii in range(3):
-    b.pick(pick_pose, controller=None)
+    b.pick(pick_pose, controller=c1)
     b.place(place_pose)
+    c1.save_centeringerr()
     f.stop_recording()
+    f.convertandsave() #convert to numpy and save the recoreded data
+
     f.filter()
     f.plot()
     #rospy.spin()

@@ -17,7 +17,7 @@ def error(sensor_values):#alignment with figner sensor_values
     return err
 
 def error1(sensor_values): #alignment with fingertip sensor
-    err1 = (sensor_values[7]-5000)-(sensor_values[15]-6000)
+    err1 = (sensor_values[7]-5400)-(sensor_values[15]-2400)
     return err1
 
 
@@ -41,7 +41,6 @@ class Controller(object):
                                                  self.control,
                                                  queue_size=1)
 
-
     def disable(self):
         self.sensor_subscriber.unregister()
         #rospy.init_node('baxter_controller')
@@ -63,9 +62,9 @@ class Controller(object):
         #err1 = error1(values) #fingertip sensor error
         #print (err1)
         #y_v = np.clip(self.P * (err), -0.05, 0.08)
-        y_t = -np.clip(self.Pt * (err1), -0.025, 0.025)
+        y_t = np.clip(self.Pt * (err1), -0.025, 0.025)
         self.err_pub.publish(y_t)
-        cartesian_v = [0.018,y_t, 0, 0, 0, 0]
+        cartesian_v = [0.02, y_t, 0, 0, 0, 0]
         joint_v = self.compute_joint_velocities(cartesian_v, self.jinv)
         self.limb.set_joint_velocities(joint_v)
 

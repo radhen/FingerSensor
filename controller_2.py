@@ -17,22 +17,21 @@ def error(sensor_values):#alignment with figner sensor_values
     return err
 
 def error1(sensor_values): #alignment with fingertip sensor
-    err1 = (sensor_values[7]-5000)-(sensor_values[15]-6000)
+    err1 = (sensor_values[7]-5400)-(sensor_values[15]-2400)
     return err1
 
 
-class Controller_1(object):
-    def __init__(self, P=1/400000):
+class Controller_2(object):
+    def __init__(self, Pt=1/30000):
 
         self.limb_name = 'left'
         self.other_limb_name = 'right'
         self.limb = baxter_interface.Limb(self.limb_name)
         self.err_pub = rospy.Publisher('/error', Float64, queue_size=1)
-        self.P = P
-        self.Pt = 1/400000
+        #self.P = P
+        self.Pt = Pt
         self.kinematics = baxter_kinematics(self.limb_name)
         self.jinv = self.kinematics.jacobian_pseudo_inverse()
-        self.centeringerr = []
         #print(self.jinv)
         #print(self.kinematics.jacobian())
 
@@ -42,33 +41,20 @@ class Controller_1(object):
                                                  self.control,
                                                  queue_size=1)
 
-
     def disable(self):
         self.sensor_subscriber.unregister()
-        #rospy.init_node('baxter_controller')
-        #self.limb_name = 'left'
-        #self.other_limb_name = 'right'
-        #self.limb = baxter_interface.Limb(self.limb_name)
-        #self.sensor_subscriber = rospy.Subscriber('/sensor_values',
-                                                 #Int32MultiArray,
-                                                 #self.control)
 
-        #self.err_pub = rospy.Publisher('/error', Float64, queue_size=1)
-        #self.P = P
-        #self.jinv = baxter_kinematics(self.limb_name).jacobian_pseudo_inverse()
 
     def control(self, msg):
         values = msg.data
-        err = error(values)
-        self.centeringerr.append(err)
-        print (self.centeringerr)
-        #err1 = error1(values)
+        #err = error(values)
+        err1 = error1(values)
         #err1 = error1(values) #fingertip sensor error
         #print (err1)
-        y_v = -np.clip(self.P * (err), -0.08, 0.08)
-        #y_t = np.clip(self.Pt * (err), -0.3, 0.3)
-        self.err_pub.publish(y_v)
-        cartesian_v = [0.0, y_v, 0, 0, 0, 0]
+        #y_v = np.clip(self.P * (err), -0.05, 0.08)
+        y_t = np.clip(self.Pt * (err1), -0.025, 0.025)
+        self.err_pub.publish(y_t)
+        cartesian_v = [-0.02, y_t, 0, 0, 0, 0]
         joint_v = self.compute_joint_velocities(cartesian_v, self.jinv)
         self.limb.set_joint_velocities(joint_v)
 
@@ -86,16 +72,9 @@ class Controller_1(object):
     	joint_v_dict.update({'head_nod':0.0 , 'head_pan':0.0, 'torso_t0':0.0})
         return joint_v_dict
 
-    def save_centeringerr(self):
-        self.centeringerr = np.array(self.centeringerr)
-        np.savetxt('centeringerr.txt', self.centeringerr)
-
 if __name__ == '__main__':
     rospy.init_node('baxter_controller')
-    c1 = Controller_1()
-    c1.enable()
+    c2 = Controller_2()
+    c2.enable()
     #c = Controller()
-    rospy.sleep(10)
-    c1.disable()
-    self.centeringerr = np.array(self.centeringerr)
-    print (self.centeringerr.shape)
+    rospy.spin()
