@@ -64,7 +64,7 @@ class Controller(object):
         #y_v = np.clip(self.P * (err), -0.05, 0.08)
         y_t = np.clip(self.Pt * (err1), -0.025, 0.025)
         self.err_pub.publish(y_t)
-        cartesian_v = [0.02, y_t, 0, 0, 0, 0]
+        cartesian_v = [0, 0.5, 0, 0, 0, 0]
         joint_v = self.compute_joint_velocities(cartesian_v, self.jinv)
         self.limb.set_joint_velocities(joint_v)
 
