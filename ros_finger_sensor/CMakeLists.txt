@@ -6,6 +6,8 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
   std_msgs
   rviz_visual_tools
+  tf
+  tf_conversions
   cmake_modules
 )
 

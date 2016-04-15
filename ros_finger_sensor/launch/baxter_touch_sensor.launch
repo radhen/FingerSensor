@@ -14,11 +14,18 @@
   <!-- Show in Rviz   -->
   <node name="rviz" pkg="rviz" type="rviz" args="-d $(find ros_finger_sensor)/launch/finger_sensor.rviz"/>
 
-
   <!-- Manual calibrationof camera TF -->
   <node pkg="keyboard" type="keyboard" name="keyboard_base_to_camera" />
   <node pkg="tf_keyboard_cal" type="tf_keyboard_cal" name="tf_keyboard_base_to_camera" output="screen">
     <rosparam command="load" file="$(find ros_finger_sensor)/config/tf_to_camera.yaml"/>
   </node>
+
+  <!-- Manual calibrationof camera TF -->
+  <node pkg="keyboard" type="keyboard" name="keyboard_base_to_table" />
+  <node pkg="tf_keyboard_cal" type="tf_keyboard_cal" name="tf_keyboard_base_to_table" output="screen">
+    <rosparam command="load" file="$(find ros_finger_sensor)/config/tf_to_table.yaml"/>
+  </node>
+
+
 
 </launch>
