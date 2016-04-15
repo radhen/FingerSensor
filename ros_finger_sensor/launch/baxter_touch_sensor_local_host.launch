@@ -4,6 +4,13 @@
   <!-- send robot XML to param server -->
   <param name="robot_description" command="cat $(find baxter_description)/urdf/baxter.urdf" />
 
+  <node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher">
+    <param name="use_gui" value="TRUE" />
+  </node>
+
+  <!-- Combine joint values -->
+  <node name="robot_state_publisher" pkg="robot_state_publisher" type="state_publisher" />
+
   <!-- Show in Rviz   -->
   <node name="rviz" pkg="rviz" type="rviz" args="-d $(find ros_finger_sensor)/launch/finger_sensor.rviz"/>
 
