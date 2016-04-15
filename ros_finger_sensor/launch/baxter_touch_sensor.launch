@@ -26,6 +26,11 @@
     <rosparam command="load" file="$(find ros_finger_sensor)/config/tf_to_table.yaml"/>
   </node>
 
+  <!-- Start Xtion -->
+  <include file="$(find openni_launch)/launch/openni.launch">
+    <arg name="depth_registration" value="true" />
+    <arg name="publish_tf" value="true" />
+  </include>
 
 
 </launch>
