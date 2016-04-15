@@ -7,9 +7,13 @@ Panels:
         - /Global Options1
         - /Status1
         - /RobotModel1
+        - /TF1
         - /TF1/Frames1
         - /MarkerArray1
-      Splitter Ratio: 0.5
+        - /PointCloud21
+        - /Marker1
+        - /Marker2
+      Splitter Ratio: 0.610738
     Tree Height: 775
   - Class: rviz/Selection
     Name: Selection
@@ -29,7 +33,7 @@ Panels:
     Experimental: false
     Name: Time
     SyncMode: 0
-    SyncSource: ""
+    SyncSource: PointCloud2
 Visualization Manager:
   Class: ""
   Displays:
@@ -302,204 +306,70 @@ Visualization Manager:
       Value: true
       Visual Enabled: true
     - Class: rviz/TF
-      Enabled: true
+      Enabled: false
       Frame Timeout: 15
       Frames:
         All Enabled: false
-        base:
-          Value: true
-        camera_link:
-          Value: true
-        collision_head_link_1:
-          Value: false
-        collision_head_link_2:
-          Value: false
-        display:
-          Value: false
-        dummyhead1:
-          Value: false
-        head:
-          Value: false
-        head_camera:
-          Value: false
-        left_arm_itb:
-          Value: false
-        left_arm_mount:
-          Value: false
-        left_gripper:
-          Value: false
-        left_gripper_base:
-          Value: false
-        left_hand:
-          Value: false
-        left_hand_accelerometer:
-          Value: false
-        left_hand_camera:
-          Value: false
-        left_hand_camera_axis:
-          Value: false
-        left_hand_range:
-          Value: false
-        left_lower_elbow:
-          Value: false
-        left_lower_forearm:
-          Value: false
-        left_lower_shoulder:
-          Value: false
-        left_torso_itb:
-          Value: false
-        left_upper_elbow:
-          Value: false
-        left_upper_elbow_visual:
-          Value: false
-        left_upper_forearm:
-          Value: false
-        left_upper_forearm_visual:
-          Value: false
-        left_upper_shoulder:
-          Value: false
-        left_wrist:
-          Value: false
-        pedestal:
-          Value: false
-        right_arm_itb:
-          Value: false
-        right_arm_mount:
-          Value: false
-        right_gripper:
-          Value: false
-        right_gripper_base:
-          Value: false
-        right_hand:
-          Value: false
-        right_hand_accelerometer:
-          Value: false
-        right_hand_camera:
-          Value: false
-        right_hand_camera_axis:
-          Value: false
-        right_hand_range:
-          Value: false
-        right_lower_elbow:
-          Value: false
-        right_lower_forearm:
-          Value: false
-        right_lower_shoulder:
-          Value: false
-        right_torso_itb:
-          Value: false
-        right_upper_elbow:
-          Value: false
-        right_upper_elbow_visual:
-          Value: false
-        right_upper_forearm:
-          Value: false
-        right_upper_forearm_visual:
-          Value: false
-        right_upper_shoulder:
-          Value: false
-        right_wrist:
-          Value: false
-        screen:
-          Value: false
-        sonar_ring:
-          Value: false
-        table:
-          Value: true
-        torso:
-          Value: false
       Marker Scale: 1
       Name: TF
       Show Arrows: true
       Show Axes: true
-      Show Names: true
+      Show Names: false
       Tree:
-        base:
-          camera_link:
-            {}
-          collision_head_link_1:
-            {}
-          collision_head_link_2:
-            {}
-          table:
-            {}
-          torso:
-            head:
-              dummyhead1:
-                {}
-              head_camera:
-                {}
-              screen:
-                display:
-                  {}
-            left_arm_mount:
-              left_upper_shoulder:
-                left_lower_shoulder:
-                  left_upper_elbow:
-                    left_lower_elbow:
-                      left_upper_forearm:
-                        left_arm_itb:
-                          {}
-                        left_lower_forearm:
-                          left_wrist:
-                            left_hand:
-                              left_gripper_base:
-                                left_gripper:
-                                  {}
-                              left_hand_accelerometer:
-                                {}
-                              left_hand_camera:
-                                {}
-                              left_hand_camera_axis:
-                                {}
-                              left_hand_range:
-                                {}
-                      left_upper_forearm_visual:
-                        {}
-                  left_upper_elbow_visual:
-                    {}
-            left_torso_itb:
-              {}
-            pedestal:
-              {}
-            right_arm_mount:
-              right_upper_shoulder:
-                right_lower_shoulder:
-                  right_upper_elbow:
-                    right_lower_elbow:
-                      right_upper_forearm:
-                        right_arm_itb:
-                          {}
-                        right_lower_forearm:
-                          right_wrist:
-                            right_hand:
-                              right_gripper_base:
-                                right_gripper:
-                                  {}
-                              right_hand_accelerometer:
-                                {}
-                              right_hand_camera:
-                                {}
-                              right_hand_camera_axis:
-                                {}
-                              right_hand_range:
-                                {}
-                      right_upper_forearm_visual:
-                        {}
-                  right_upper_elbow_visual:
-                    {}
-            right_torso_itb:
-              {}
-            sonar_ring:
-              {}
+        {}
       Update Interval: 0
-      Value: true
+      Value: false
     - Class: rviz/MarkerArray
       Enabled: true
       Marker Topic: /finger_sensor_test/visual_tools
       Name: MarkerArray
       Namespaces:
-        Cuboid: true
+        {}
+      Queue Size: 100
+      Value: true
+    - Alpha: 1
+      Autocompute Intensity Bounds: true
+      Autocompute Value Bounds:
+        Max Value: 10
+        Min Value: -10
+        Value: true
+      Axis: Z
+      Channel Name: intensity
+      Class: rviz/PointCloud2
+      Color: 255; 255; 255
+      Color Transformer: RGB8
+      Decay Time: 0
+      Enabled: true
+      Invert Rainbow: false
+      Max Color: 255; 255; 255
+      Max Intensity: 4096
+      Min Color: 0; 0; 0
+      Min Intensity: 0
+      Name: PointCloud2
+      Position Transformer: XYZ
+      Queue Size: 10
+      Selectable: true
+      Size (Pixels): 1
+      Size (m): 0.01
+      Style: Points
+      Topic: /camera/depth_registered/points
+      Use Fixed Frame: true
+      Use rainbow: true
+      Value: true
+    - Class: rviz/Marker
+      Enabled: true
+      Marker Topic: /qr_baxter/visualization_marker
+      Name: Marker
+      Namespaces:
+        basic_shapes: true
+      Queue Size: 100
+      Value: true
+    - Class: rviz/Marker
+      Enabled: true
+      Marker Topic: /qr_xtion/visualization_marker
+      Name: Marker
+      Namespaces:
+        basic_shapes: true
       Queue Size: 100
       Value: true
   Enabled: true
@@ -526,7 +396,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 10
+      Distance: 3.16478
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.06
         Stereo Focal Distance: 1
@@ -538,10 +408,10 @@ Visualization Manager:
         Z: 0
       Name: Current View
       Near Clip Distance: 0.01
-      Pitch: 0.719797
+      Pitch: 0.434797
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 0.650392
+      Yaw: 1.08039
     Saved: ~
 Window Geometry:
   Displays:
