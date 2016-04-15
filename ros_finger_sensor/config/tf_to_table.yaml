@@ -6,6 +6,6 @@ initial_pitch: 0
 initial_yaw: 0
 from: base
 to: table
-save_to_package: ros_finger_sensor
+file_package: ros_finger_sensor
 file_name: /config/tf_to_table.yaml
 topic_name: /keyboard_base_to_table/keydown
