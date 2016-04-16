@@ -120,9 +120,9 @@ class JointSprings(object):
 
         error = [self._limb.joint_angles()[key] - self._start_angles[key] for key in self._limb.joint_angles().keys()]
         self.sum_sqr_error = sum([error[i]**2 for i in range(len(error))])
-        print ('-------new set of joint position---------')
-        print (self.sum_sqr_error)
-        tolerance = 0.020
+        #print ('-------new set of joint position---------')
+        #print (self.sum_sqr_error)
+        tolerance = 0.025
         # loop at specified rate commanding new joint torques
         while self.sum_sqr_error>tolerance and not rospy.is_shutdown():
 
