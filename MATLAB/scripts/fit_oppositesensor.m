@@ -1,5 +1,5 @@
-D=load('14_sensorwhiteppr_PDMS.txt');
-B=load('baseValues_14sensors.txt');
+D=load('../../misc/14_sensorwhiteppr_PDMS.txt');
+B=load('../../misc/baseValues_14sensors.txt');
 B=repmat(mean(B),size(D,1),1);
 D=10*log10(D./B);
 
