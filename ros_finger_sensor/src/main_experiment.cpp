@@ -10,6 +10,12 @@
 #include <tf/transform_listener.h>
 #include <tf_conversions/tf_eigen.h>
 
+#include <sensor_msgs/PointCloud2.h>
+#include <pcl_ros/point_cloud.h>
+#include <pcl_ros/transforms.h>
+#include <pcl/PCLPointCloud2.h>
+#include <pcl/conversions.h>
+
 #include <Eigen/Core>
 
 #include <iostream>
@@ -29,6 +35,10 @@ private:
   Eigen::Affine3d new_pose_;
   Eigen::Affine3d table_pose_;
 
+  pcl::PointCloud<pcl::PointXYZRGB>::Ptr roi_cloud_;
+  ros::Publisher roi_cloud_pub_;
+  ros::Subscriber raw_cloud_sub_;
+
 public:
   // Constructor
   FingerSensorTest(int test)
@@ -45,28 +55,51 @@ public:
     tf_listener_.waitForTransform("/base", "/table", ros::Time(0), ros::Duration(5.0));
     tf_listener_.lookupTransform("/base", "/table", ros::Time(0), table_transform_);
     tf::transformTFToEigen(table_transform_, table_pose_);
-    visual_tools_->publishCuboid(table_pose_, 0.6, 1.0, 0.4, rviz_visual_tools::ORANGE);
+    visual_tools_->publishCuboid(table_pose_, 0.6, 0.8, 0.72, rviz_visual_tools::ORANGE);
+
+    // point cloud
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr roi_cloud(new pcl::PointCloud<pcl::PointXYZRGB>);
+    roi_cloud_ = roi_cloud;
+    roi_cloud_pub_ = nh_.advertise<pcl::PointCloud<pcl::PointXYZRGB> >("roi_cloud", 1);
+    raw_cloud_sub_ = nh_.subscribe("/camera/depth_registered/points", 1, &FingerSensorTest::processPointCloud, this);
 
     while(ros::ok())
     {
-      tf_listener_.lookupTransform("/base", "/table", ros::Time(0), table_transform_);
-      tf::transformTFToEigen(table_transform_, new_pose_);
+      // updateTableTransform();
+      
 
-      // test if table pose has been updated & update visualization
-      if ( !(std::abs((new_pose_.translation() - table_pose_.translation()).sum()) < 0.001 && 
-             std::abs((new_pose_.rotation() - table_pose_.rotation()).sum()) < 0.001 ) )
-        {
-          std::cout << "translation = " << new_pose_.translation() - table_pose_.translation() << std::endl;
-          std::cout << "rotation = \n" << new_pose_.rotation() - table_pose_.rotation() << std::endl;
-          ROS_DEBUG_STREAM_NAMED("constructor","update cuboid position");
-          table_pose_ = new_pose_;
-          tf::transformTFToEigen(table_transform_, new_pose_);
+    }
+
+  }
+
+  void processPointCloud(const sensor_msgs::PointCloud2ConstPtr& msg)
+  {
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr raw_cloud(new pcl::PointCloud<pcl::PointXYZRGB>);
+    pcl::fromROSMsg(*msg, *raw_cloud);
+
+    ROS_DEBUG_STREAM_NAMED("processPointCloud","width = " << raw_cloud->width << ", height = " << raw_cloud->height);
+
+  }
+
+  void updateTableTransform()
+  {
+    tf_listener_.lookupTransform("/base", "/table", ros::Time(0), table_transform_);
+    tf::transformTFToEigen(table_transform_, new_pose_);
+    
+    // test if table pose has been updated & update visualization
+    if ( !(std::abs((new_pose_.translation() - table_pose_.translation()).sum()) < 0.001 && 
+           std::abs((new_pose_.rotation() - table_pose_.rotation()).sum()) < 0.001 ) )
+    {
+      std::cout << "translation = " << new_pose_.translation() - table_pose_.translation() << std::endl;
+      std::cout << "rotation = \n" << new_pose_.rotation() - table_pose_.rotation() << std::endl;
+      ROS_DEBUG_STREAM_NAMED("constructor","update cuboid position");
+      table_pose_ = new_pose_;
+      tf::transformTFToEigen(table_transform_, new_pose_);
           visual_tools_->deleteAllMarkers();
           visual_tools_->publishCuboid(table_pose_, 0.6, 1.0, 0.4, rviz_visual_tools::ORANGE);
-        }
-      
     }
   }
+
 };
 
 }
