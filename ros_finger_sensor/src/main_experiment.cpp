@@ -15,6 +15,7 @@
 #include <pcl_ros/transforms.h>
 #include <pcl/PCLPointCloud2.h>
 #include <pcl/conversions.h>
+#include <pcl/filters/passthrough.h>
 
 #include <Eigen/Core>
 
@@ -39,11 +40,15 @@ private:
   ros::Publisher roi_cloud_pub_;
   ros::Subscriber raw_cloud_sub_;
 
+
 public:
   // Constructor
   FingerSensorTest(int test)
     : nh_("~")
   {
+
+    //bool processing_ = false;
+
     std::cout << test << std::endl;
     ROS_INFO_STREAM_NAMED("constructor","test...");
 
@@ -63,10 +68,11 @@ public:
     roi_cloud_pub_ = nh_.advertise<pcl::PointCloud<pcl::PointXYZRGB> >("roi_cloud", 1);
     raw_cloud_sub_ = nh_.subscribe("/camera/depth_registered/points", 1, &FingerSensorTest::processPointCloud, this);
 
+
     while(ros::ok())
     {
       // updateTableTransform();
-      
+
 
     }
 
@@ -74,10 +80,40 @@ public:
 
   void processPointCloud(const sensor_msgs::PointCloud2ConstPtr& msg)
   {
+
+    // set regoin of interest
+    double raw_depth_ = 15;
+    double raw_width_ = 8;
+    double raw_height_ = 8;
+    Eigen::Affine3d raw_pose_ = Eigen::Affine3d::Identity();
+    //raw_pose_.translation() += Eigen::Vector3d( 0.687 + raw_depth_ / 2.0,
+                                                  //-0.438 + raw_width_ / 2.0,
+                                                //   0.002 + raw_height_ / 2.0);
+
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr raw_cloud(new pcl::PointCloud<pcl::PointXYZRGB>);
     pcl::fromROSMsg(*msg, *raw_cloud);
 
+    // Filter based on bin location
+    pcl::PassThrough<pcl::PointXYZRGB> pass_x;
+    pass_x.setInputCloud(raw_cloud);
+    pass_x.setFilterFieldName("x");
+    pass_x.setFilterLimits(raw_pose_.translation()[0]-raw_depth_ / 2.0, raw_pose_.translation()[0] + raw_depth_ / 2.0);
+    pass_x.filter(*raw_cloud);
+
+    pcl::PassThrough<pcl::PointXYZRGB> pass_y;
+    pass_y.setInputCloud(raw_cloud);
+    pass_y.setFilterFieldName("y");
+    pass_y.setFilterLimits(raw_pose_.translation()[1] - raw_width_ / 2.0, raw_pose_.translation()[1] + raw_width_ / 2.0);
+    pass_y.filter(*raw_cloud);
+
+    pcl::PassThrough<pcl::PointXYZRGB> pass_z;
+    pass_z.setInputCloud(raw_cloud);
+    pass_z.setFilterFieldName("z");
+    pass_z.setFilterLimits(raw_pose_.translation()[2] - raw_height_ / 2.0, raw_pose_.translation()[2] + raw_height_ / 2.0);
+    pass_z.filter(*raw_cloud);
     ROS_DEBUG_STREAM_NAMED("processPointCloud","width = " << raw_cloud->width << ", height = " << raw_cloud->height);
+
+    roi_cloud_pub_.publish(raw_cloud);
 
   }
 
@@ -85,9 +121,9 @@ public:
   {
     tf_listener_.lookupTransform("/base", "/table", ros::Time(0), table_transform_);
     tf::transformTFToEigen(table_transform_, new_pose_);
-    
+
     // test if table pose has been updated & update visualization
-    if ( !(std::abs((new_pose_.translation() - table_pose_.translation()).sum()) < 0.001 && 
+    if ( !(std::abs((new_pose_.translation() - table_pose_.translation()).sum()) < 0.001 &&
            std::abs((new_pose_.rotation() - table_pose_.rotation()).sum()) < 0.001 ) )
     {
       std::cout << "translation = " << new_pose_.translation() - table_pose_.translation() << std::endl;
