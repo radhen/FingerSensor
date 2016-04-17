@@ -1,11 +1,11 @@
-D=load('red_ycb_cup.txt');
+D=load('../../objectscan_data/red_ycb_cup.txt');
 w=12; % distance between sensors (cm)
 load ('fit_individualsensor','f');
 % Read measurements
 R=[D(:,2:8) D(:,10:16)];
 
 % Read base values
-B=load('baseValues_14sensors.txt');
+B=load('../../misc/baseValues_14sensors.txt');
 B=[B(:,2:8) B(:,10:16)];
 B=repmat(mean(B),size(R,1),1);
 

@@ -15,10 +15,11 @@ pointC = [5,49,18860];
 points=[pointA' pointB' pointC'];
 %fill3(points(1,:),points(2,:),points(3,:),'r')
 %alpha(0.3)
-set(xlabel('Sensor (left)'),'FontSize',18);
-set(ylabel('Time [0.1s]'),'FontSize',18);
+set(xlabel('Sensor (left)'),'FontSize',18,'Rotation',40);
+set(ylabel('Time [0.1s]'),'FontSize',18,'Rotation',-50);
 set(zlabel('Raw value'),'FontSize',18);
 set(gca,'XTick',1:7)
+set(gca,'XTickLabel',get(gca,'XTickLabel'),'fontsize',16)
 
 subplot(1,2,2)
 mesh(Z,time,data(:,9:15));
@@ -30,10 +31,10 @@ points=[pointA' pointB' pointC'];
 %fill3(points(1,:),points(2,:),points(3,:),'r')
 %alpha(0.3)
 %set(title('Right finger'),'FontSize',14);
-set(xlabel('Sensor (right)'),'FontSize',18);
+set(xlabel('Sensor (right)'),'FontSize',18,'Rotation',40);
 %set(ylabel('Time [0.1s]'),'FontSize',18);
 set(gca,'XTick',1:7)
-set(gca,'XTickLabel',get(gca,'XTickLabel'),'fontsize',18)
+set(gca,'XTickLabel',get(gca,'XTickLabel'),'fontsize',16)
 saveas(h,'Figure9a','png')
 
 h=figure(2);

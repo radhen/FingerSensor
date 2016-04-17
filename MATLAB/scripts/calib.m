@@ -1,4 +1,4 @@
-D=load('calib_whitepaper.txt');
+D=load('../../objectscan_data/calib_whitepaper.txt');
 S=D(:,1:7);
 R=reshape(S',size(S,1)*size(S,2),1);
 

@@ -1,4 +1,4 @@
-D=load('14_sensorwhiteppr.txt');
+D=load('../../Misc/14_sensorwhiteppr.txt');
 B=min(D); %load('baseValues_14sensors.txt');
 B=repmat(B,size(D,1),1);
 D=10*log10(D./B);
