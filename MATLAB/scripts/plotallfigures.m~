@@ -11,6 +11,3 @@ plot_forcendistanceplot_1.m
 
 % Create Figure 5c
 plot_forcedistanceplot.m
-
-% Create Figure 6a 6b
-plot_plot_avgerr&acurracy.m
