@@ -111,9 +111,10 @@ public:
     pass_z.setFilterFieldName("z");
     pass_z.setFilterLimits(raw_pose_.translation()[2] - raw_height_ / 2.0, raw_pose_.translation()[2] + raw_height_ / 2.0);
     pass_z.filter(*raw_cloud);
-    ROS_DEBUG_STREAM_NAMED("processPointCloud","width = " << raw_cloud->width << ", height = " << raw_cloud->height);
+    //ROS_DEBUG_STREAM_NAMED("processPointCloud","width = " << raw_cloud->width << ", height = " << raw_cloud->height);
 
     roi_cloud_pub_.publish(raw_cloud);
+    ROS_DEBUG_STREAM_THROTTLE_NAMED(2, "point_cloud_filter","Publishing filtered point cloud")
 
   }
 
