@@ -1,7 +1,7 @@
-initial_x: 1.39
-initial_y: 1.2
-initial_z: 0.5
-initial_roll: 0
+initial_x: 1.43
+initial_y: 0.72
+initial_z: 0.52
+initial_roll: -0.01
 initial_pitch: 0
 initial_yaw: 0
 from: base
