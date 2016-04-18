@@ -21,3 +21,14 @@ axis([-5 6 0 65535]);
 %figure('Color',[0.8 0.8 0.8]);
 plot([0 0],[0 65535],'r--')
 %print('force_distance','-dpng')
+
+
+legend('40mA','80mA', '120mA', '160mA', '200mA');
+%title('PDMS|8:1,6mm')
+set(xlabel('-Force [N] / Distance [cm] '),'FontSize',12)
+set(ylabel('16-bit ADC value'),'FontSize',12)
+set(title('PDMS|8:1, 6mm'),'FontSize',14)
+axis([-5 6 0 65535]);
+%figure('Color',[0.8 0.8 0.8]);
+plot([0 0],[0 65535],'r--')
+%print('force_distance','-dpng')

@@ -24,10 +24,10 @@ plot(Dx,Dy,'y')
 
 
 legend('White','Gray', 'Black', 'Red', 'Yellow');
- set(xlabel('-Force [N] / Distance [cm] '),'FontSize',12)
- set(ylabel('Sensor reading'),'FontSize',12)
- set(title('PDMS'),'FontSize',15)
- axis([-5 6 0 65535]);
- %figure('Color',[0.8 0.8 0.8]);
- plot([0 0],[0 65535],'r--')
- %print('force_distance','-dpng')
+set(xlabel('-Force [N] / Distance [cm] '),'FontSize',12)
+set(ylabel('16-bit ADC value'),'FontSize',12)
+set(title('PDMS|8:1, 40mA'),'FontSize',14)
+axis([-5 6 0 65535]);
+%figure('Color',[0.8 0.8 0.8]);
+plot([0 0],[0 65535],'r--')
+%print('force_distance','-dpng')

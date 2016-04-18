@@ -21,10 +21,10 @@ hold on
  Fpdmsy = pressure121(2,[1,6,7,8]);
  plot([-flip(Fpdmsx) Dpdmsx],[flip(Fpdmsy) Dpdmsy])
  
-%legend('Vytaflex@40mA','Ecoflex @20mA', 'PDMS@120mA');
+legend('8:1','10:1', '12:1');
 set(xlabel('-Force [N] / Distance [cm] '),'FontSize',14)
-set(ylabel('Sensor reading'),'FontSize',14)
-set(title('PDMS'),'FontSize',14)
+set(ylabel('16-bit ADC value'),'FontSize',14)
+set(title('PDMS|40mA, 6mm'),'FontSize',14)
 axis([-5 5 0 65535]);
 plot([0 0],[0 65535],'r--')
 print('force_distance','-dpng')
