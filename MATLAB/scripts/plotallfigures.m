@@ -1,14 +1,20 @@
 addpath ../workspaces
 
 
-% Create Figure 5a, 5b, 6a
-plot_forcendistanceplot_1.m
+% Create Figure 5a
+plot_Figure5a.m
+
+% Create Figure 5b
+plot_Figure5b.m
 
 % Create Figure 5c
-plot_forcedistanceplot.m
+plot_Figure5c.m
 
-% Create Figure 6a 6b
-plot_plot_avgerr&acurracy.m
+% Create Figure 6a
+plot_Figure6a.m
+
+% Create Figure 6b, 6c
+plot_Figure6b,6c.m
 
 % Create Figure 6d
 plot_forcecalib;
