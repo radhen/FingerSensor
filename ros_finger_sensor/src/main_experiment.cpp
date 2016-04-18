@@ -80,6 +80,17 @@ public:
 
   void processPointCloud(const sensor_msgs::PointCloud2ConstPtr& msg)
   {
+    // get point cloud in /base coordinate frame
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr raw_cloud(new pcl::PointCloud<pcl::PointXYZRGB>);
+    pcl::fromROSMsg(*msg, *raw_cloud);
+    static const std::string BASE_LINK = "/base";
+    tf_listener_.waitForTransform(BASE_LINK, raw_cloud->header.frame_id, msg->header.stamp, ros::Duration(2.0));
+
+    if (!pcl_ros::transformPointCloud(BASE_LINK, *raw_cloud, *roi_cloud_, tf_listener_))
+    {
+      ROS_ERROR_STREAM_NAMED("processPointCloud","Error converting to desired frame");
+    }
+
 
     // set regoin of interest
     double raw_depth_ = 15;
@@ -89,9 +100,6 @@ public:
     //raw_pose_.translation() += Eigen::Vector3d( 0.687 + raw_depth_ / 2.0,
                                                   //-0.438 + raw_width_ / 2.0,
                                                 //   0.002 + raw_height_ / 2.0);
-
-    pcl::PointCloud<pcl::PointXYZRGB>::Ptr raw_cloud(new pcl::PointCloud<pcl::PointXYZRGB>);
-    pcl::fromROSMsg(*msg, *raw_cloud);
 
     // Filter based on bin location
     pcl::PassThrough<pcl::PointXYZRGB> pass_x;
@@ -114,7 +122,7 @@ public:
     //ROS_DEBUG_STREAM_NAMED("processPointCloud","width = " << raw_cloud->width << ", height = " << raw_cloud->height);
 
     roi_cloud_pub_.publish(raw_cloud);
-    ROS_DEBUG_STREAM_THROTTLE_NAMED(2, "point_cloud_filter","Publishing filtered point cloud")
+    ROS_DEBUG_STREAM_THROTTLE_NAMED(2, "point_cloud_filter","Publishing filtered point cloud");
 
   }
 
