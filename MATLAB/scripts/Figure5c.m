@@ -1,4 +1,4 @@
-h=figure(6);
+h=figure;
 hold on
 
 % %Forces and distances at 40mA (PDMS)

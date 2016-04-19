@@ -18,16 +18,17 @@ X=reshape(X',size(S,1)*size(S,2),1);
 
 
 %% Plot fitted curve and data
-h=figure(1), hold on;
-p=plot(f,X,R)
+h=figure(1);
+p=plot(f,X,R); hold on;
 p(1).Color='Red';
-set(xlabel('Distance (cm)'),'FontSize',14);
-set(ylabel('10 log I/I_0 dB'),'FontSize',14);
+set(gca,'XTickLabel',get(gca,'XTickLabel'),'fontsize',12);
+set(xlabel('Distance (cm)'),'FontSize',20);
+set(ylabel('10 log I/I_0 dB'),'FontSize',20);
 %set(title('No PDMS, white paper'),'FontSize',14);
 disp(sprintf('R-Square Value %f',gof.rsquare))
 %saveas(h,'fit_whitepaper','png');
 
-legend('Intensity (Raw)',sprintf('y=%0.2fx^{%2.2f} %0.2f',(f.a),f.b,f.c))
+set(legend('Intensity (Raw)',sprintf('y=%0.2fx^{%2.2f} %0.2f',(f.a),f.b,f.c)),'FontSize',18);
 
 %% Plot calculated distances from sensor readings
 h=figure(2)
@@ -45,8 +46,8 @@ set(ylabel('Average error (cm)'),'FontSize',14);
 %% PRINT PDMS VALUES
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-D=load('14_sensorwhiteppr_PDMS.txt');
-B=load('baseValues_14sensors.txt');
+D=load('../../Misc/14_sensorwhiteppr_PDMS.txt');
+B=load('../../Misc/baseValues_14sensors.txt');
 B=repmat(mean(B),size(D,1),1);
 D=10*log10(D./B);
 
@@ -68,12 +69,12 @@ X=reshape(X',size(S,1)*size(S,2),1);
 h=figure(1)
 p=plot(fpdms,X,R)
 p(2).Color='Blue';
-set(xlabel('Distance (cm)'),'FontSize',14);
-set(ylabel('10 log I/I_0 dB'),'FontSize',14);
+set(xlabel('Distance (cm)'),'FontSize',20);
+set(ylabel('10 log I/I_0 dB'),'FontSize',20);
 %set(title('No PDMS, white paper'),'FontSize',14);
 disp(sprintf('R-Square Value %f',gof.rsquare))
-saveas(h,'fit_whitepaper','png');
-legend('Intensity (raw)',sprintf('y=%0.2fx^{%2.2f} %0.2f',(f.a),f.b,f.c),'Intensity (PDMS)',sprintf('y=%0.2fx^{%2.2f} %0.2f',(fpdms.a),fpdms.b,fpdms.c))
+saveas(h,'Figure6b','png');
+set(legend('Intensity (raw)',sprintf('y=%0.2fx^{%2.2f} %0.2f',(f.a),f.b,f.c),'Intensity (PDMS)',sprintf('y=%0.2fx^{%2.2f} %0.2f',(fpdms.a),fpdms.b,fpdms.c)),'FontSize',18)
 
 
 %% Plot calculated distances from sensor readings
@@ -82,10 +83,10 @@ Xest=((R-fpdms.c)/fpdms.a).^(1/fpdms.b);
 Xerror=reshape(Xest-X,length(Xest)/length(Xvalues),length(Xvalues));
 errorbar(Xvalues,mean(Xerror),std(Xerror),'r'), hold on;
 
-legend('Raw sensor','PDMS sensor')
-
+set(gca,'XTickLabel',get(gca,'XTickLabel'),'fontsize',12);
+set(legend('Raw sensor','PDMS sensor'),'FontSize',18);
 % set(title('Average error (No PDMS/white paper)'),'FontSize',14);
-set(xlabel('Distance (cm)'),'FontSize',14);
-set(ylabel('Average error (cm)'),'FontSize',14);
-saveas(h,'error_whitepaper','png');
+set(xlabel('Distance (cm)'),'FontSize',20);
+set(ylabel('Average error (cm)'),'FontSize',20);
+saveas(h,'Figure6c','png');
 
