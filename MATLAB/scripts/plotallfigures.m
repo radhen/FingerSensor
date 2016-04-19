@@ -2,19 +2,19 @@ addpath ../workspaces
 
 
 % Create Figure 5a
-Figure5a.m
+Figure5a
 
 % Create Figure 5b
-Figure5b.m
+Figure5b
 
 % Create Figure 5c
-Figure5c.m
+Figure5c
 
 % Create Figure 6a
-Figure6a.m
+Figure6a
 
 % Create Figure 6b, 6c
-Figure6b,6c.m
+Figure6b6c
 
 % Create Figure 6d
 Figure6d;
