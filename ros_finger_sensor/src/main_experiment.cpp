@@ -27,16 +27,21 @@ namespace ros_finger_sensor
 class FingerSensorTest
 {
 private:
+  std::string qr_marker_;
+
   ros::NodeHandle nh_;
 
   rviz_visual_tools::RvizVisualToolsPtr visual_tools_;
 
   tf::TransformListener tf_listener_;
-  tf::StampedTransform table_transform_;
   tf::StampedTransform qr_transform_;
-  Eigen::Affine3d new_pose_;
-  Eigen::Affine3d table_pose_;
+
+  Eigen::Affine3d roi_pose_;
   Eigen::Affine3d qr_pose_;
+
+  double roi_depth_, roi_width_, roi_height_;
+  double qr_offset_x_, qr_offset_y_, qr_offset_z_;
+  double roi_padding_x_, roi_padding_y_, roi_padding_z_;
 
   pcl::PointCloud<pcl::PointXYZRGB>::Ptr roi_cloud_;
   ros::Publisher roi_cloud_pub_;
@@ -48,8 +53,7 @@ public:
   FingerSensorTest(int test)
     : nh_("~")
   {
-
-    //bool processing_ = false;
+    qr_marker_ = "ar_marker_0";
 
     std::cout << test << std::endl;
     ROS_INFO_STREAM_NAMED("constructor","test...");
@@ -57,21 +61,20 @@ public:
     visual_tools_.reset(new rviz_visual_tools::RvizVisualTools("base", "visual_tools"));
     visual_tools_->deleteAllMarkers();
 
-    // get tf for table
-    ROS_INFO_STREAM_NAMED("constructor","waiting for table transform to be published...");
-    tf_listener_.waitForTransform("/base", "/table", ros::Time(0), ros::Duration(5.0));
-    tf_listener_.lookupTransform("/base", "/table", ros::Time(0), table_transform_);
-    tf::transformTFToEigen(table_transform_, table_pose_);
-    visual_tools_->publishCuboid(table_pose_, 0.6, 0.8, 0.72, rviz_visual_tools::BLUE);
 
-    // get tf to qr code
-    ROS_DEBUG_STREAM_NAMED("constructor","waiting for qr transform to be published...");
-    tf_listener_.waitForTransform("/base", "/ar_marker_0", ros::Time(0), ros::Duration(5.0));
-    tf_listener_.lookupTransform("/base", "/ar_marker_0", ros::Time(0), qr_transform_);
-    tf::transformTFToEigen(qr_transform_, qr_pose_);
-    std::cout << qr_pose_.rotation() << std::endl;
-    std::cout << qr_pose_.translation() << std::endl;
-
+    // Setup to filter workspace
+    // TODO: add these values to config file in case setup moves...
+    roi_depth_ = 0.75;
+    roi_width_ = 0.60;
+    roi_height_ = 0.50;
+    qr_offset_x_ = -0.05;
+    qr_offset_y_ = -0.05;
+    qr_offset_z_ = -0.10;
+    roi_padding_x_ = 0.05;
+    roi_padding_y_ = 0.05;
+    roi_padding_z_ = 0.0;
+    
+    showRegionOfInterest();
 
     // point cloud
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr roi_cloud(new pcl::PointCloud<pcl::PointXYZRGB>);
@@ -82,60 +85,77 @@ public:
 
     while(ros::ok())
     {
-      // updateTableTransform();
-
 
     }
 
+  }
+
+  void showRegionOfInterest()
+  {
+    // get tf to qr code
+    // TODO: ar_marker_# needs to go in config file. How are ids chosen?
+    ROS_DEBUG_STREAM_NAMED("constructor","waiting for qr transform to be published...");
+    tf_listener_.waitForTransform("/base", qr_marker_, ros::Time(0), ros::Duration(1.0));
+    tf_listener_.lookupTransform("/base", qr_marker_, ros::Time(0), qr_transform_);
+    tf::transformTFToEigen(qr_transform_, qr_pose_);
+
+    // add offsets and display region of interset
+    Eigen::Affine3d pose_offset = Eigen::Affine3d::Identity();
+    pose_offset.translation()[0] += roi_depth_ / 2.0 + qr_offset_x_;
+    pose_offset.translation()[1] += roi_width_ / 2.0 + qr_offset_y_;
+    pose_offset.translation()[2] += roi_height_ / 2.0 + qr_offset_z_; // roi_pose_ in qr coord. frame
+    roi_pose_ = qr_pose_ * pose_offset; // roi_pose_ in base coord. frame
+    
+    visual_tools_->publishAxisLabeled(roi_pose_, "roi_pose");
+    visual_tools_->publishWireframeCuboid(roi_pose_, roi_depth_, roi_width_, roi_height_, rviz_visual_tools::CYAN);
+    visual_tools_->publishWireframeCuboid(roi_pose_, 
+                                          roi_depth_ - 2 * roi_padding_x_, 
+                                          roi_width_ - 2 * roi_padding_y_, 
+                                          roi_height_ - 2 * roi_padding_z_, 
+                                          rviz_visual_tools::MAGENTA);
   }
 
   void processPointCloud(const sensor_msgs::PointCloud2ConstPtr& msg)
   {
-    // get point cloud in /base coordinate frame
+    // get point cloud in qr_marker_ coordinate frame
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr raw_cloud(new pcl::PointCloud<pcl::PointXYZRGB>);
     pcl::fromROSMsg(*msg, *raw_cloud);
-    static const std::string BASE_LINK = "/base";
-    tf_listener_.waitForTransform(BASE_LINK, raw_cloud->header.frame_id, msg->header.stamp, ros::Duration(2.0));
-
-    if (!pcl_ros::transformPointCloud(BASE_LINK, *raw_cloud, *roi_cloud_, tf_listener_))
+    tf_listener_.waitForTransform(qr_marker_, raw_cloud->header.frame_id, msg->header.stamp, ros::Duration(2.0));
+    if (!pcl_ros::transformPointCloud(qr_marker_, *raw_cloud, *roi_cloud_, tf_listener_))
     {
       ROS_ERROR_STREAM_NAMED("processPointCloud","Error converting to desired frame");
     }
+    
+    segmentRegionOfInterest();
 
 
-    // set regoin of interest
-    double raw_depth_ = 15;
-    double raw_width_ = 8;
-    double raw_height_ = 8;
-    Eigen::Affine3d raw_pose_ = Eigen::Affine3d::Identity();
-    //raw_pose_.translation() += Eigen::Vector3d( 0.687 + raw_depth_ / 2.0,
-                                                  //-0.438 + raw_width_ / 2.0,
-                                                //   0.002 + raw_height_ / 2.0);
 
-    // Filter based on bin location
-    pcl::PassThrough<pcl::PointXYZRGB> pass_x;
-    pass_x.setInputCloud(raw_cloud);
-    pass_x.setFilterFieldName("x");
-    pass_x.setFilterLimits(raw_pose_.translation()[0]-raw_depth_ / 2.0, raw_pose_.translation()[0] + raw_depth_ / 2.0);
-    pass_x.filter(*raw_cloud);
-
-    pcl::PassThrough<pcl::PointXYZRGB> pass_y;
-    pass_y.setInputCloud(raw_cloud);
-    pass_y.setFilterFieldName("y");
-    pass_y.setFilterLimits(raw_pose_.translation()[1] - raw_width_ / 2.0, raw_pose_.translation()[1] + raw_width_ / 2.0);
-    pass_y.filter(*raw_cloud);
-
-    pcl::PassThrough<pcl::PointXYZRGB> pass_z;
-    pass_z.setInputCloud(raw_cloud);
-    pass_z.setFilterFieldName("z");
-    pass_z.setFilterLimits(raw_pose_.translation()[2] - raw_height_ / 2.0, raw_pose_.translation()[2] + raw_height_ / 2.0);
-    pass_z.filter(*raw_cloud);
-    //ROS_DEBUG_STREAM_NAMED("processPointCloud","width = " << raw_cloud->width << ", height = " << raw_cloud->height);
-
-    roi_cloud_pub_.publish(raw_cloud);
-    ROS_DEBUG_STREAM_THROTTLE_NAMED(2, "point_cloud_filter","Publishing filtered point cloud");
+    roi_cloud_pub_.publish(roi_cloud_);
 
   }
+
+  void segmentRegionOfInterest()
+  {   
+    // Filter based on bin location
+    pcl::PassThrough<pcl::PointXYZRGB> pass_x;
+    pass_x.setInputCloud(roi_cloud_);
+    pass_x.setFilterFieldName("x");
+    pass_x.setFilterLimits(qr_offset_x_ + roi_padding_x_, roi_depth_ + qr_offset_x_ - roi_padding_x_);
+    pass_x.filter(*roi_cloud_);
+
+    pcl::PassThrough<pcl::PointXYZRGB> pass_y;
+    pass_y.setInputCloud(roi_cloud_);
+    pass_y.setFilterFieldName("y");
+    pass_y.setFilterLimits(qr_offset_y_ + roi_padding_y_, roi_width_ + qr_offset_y_ - roi_padding_y_);
+    pass_y.filter(*roi_cloud_);
+
+    pcl::PassThrough<pcl::PointXYZRGB> pass_z;
+    pass_z.setInputCloud(roi_cloud_);
+    pass_z.setFilterFieldName("z");
+    pass_z.setFilterLimits(qr_offset_z_ + roi_padding_z_, roi_height_ + qr_offset_z_ - roi_padding_z_);
+    pass_z.filter(*roi_cloud_);
+  }
+
 };
 
 }
