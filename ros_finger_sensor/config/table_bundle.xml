@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
+<multimarker markers="3">
+  <!-- master tag -->
+  <!-- corners are counter clockwise: lower left, lower right, upper right, upper left corner -->
+  <!-- units are centimeters -->
+    <marker index="2" status="1">
+        <corner x="-2.25" y="-2.25" z="0" />
+        <corner x="2.25" y="-2.25" z="0" />
+        <corner x="2.25" y="2.25" z="0" />
+        <corner x="-2.25" y="2.25" z="0" />
+    </marker>
+    <marker index="17" status="1">
+        <corner x="-2.25" y="49.55" z="0" />
+        <corner x="2.25" y="49.55" z="0" />
+        <corner x="2.25" y="54.05" z="0" />
+        <corner x="-2.25" y="54.05" z="0" />
+    </marker>
+    <marker index="8" status="1">
+        <corner x="-32.25" y="-2.25" z="0" />
+        <corner x="-27.75" y="-2.25" z="0" />
+        <corner x="-27.75" y="2.25" z="0" />
+        <corner x="-32.25" y="2.25" z="0" />
+    </marker>
+</multimarker>
