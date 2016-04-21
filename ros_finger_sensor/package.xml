@@ -17,6 +17,8 @@
   <build_depend>libpcl-all-dev</build_depend>
   <build_depend>sensor_msgs</build_depend>
   <build_depend>cmake_modules</build_depend>
+  <build_depend>baxter_core_msgs</build_depend>
+  <build_depend>eigen_conversions</build_depend>
   <run_depend>roscpp</run_depend>
   <run_depend>rospy</run_depend>
   <run_depend>std_msgs</run_depend>
@@ -25,6 +27,8 @@
   <run_depend>tf_conversions</run_depend>
   <run_depend>libpcl-all</run_depend>
   <run_depend>sensor_msgs</run_depend>
+  <run_depend>baxter_core_msgs</run_depend>
+  <run_depend>eigen_conversions</run_depend>
 
 
   <export>

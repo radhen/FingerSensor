@@ -8,10 +8,12 @@ find_package(catkin REQUIRED COMPONENTS
   rviz_visual_tools
   tf
   tf_conversions
+  eigen_conversions
   pcl_ros
   pcl_conversions
   sensor_msgs
   cmake_modules
+  baxter_core_msgs
 )
 
 find_package(Eigen REQUIRED)
