@@ -8,11 +8,6 @@
   <!-- send robot XML to param server -->
   <param name="robot_description" command="cat $(find baxter_description)/urdf/baxter.urdf" />
   
-  <!-- <node name="planning_joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher"> -->
-  <!--   <param name="use_gui" value="FALSE" /> -->
-  <!--   <remap from="joint_states" to="my_states" /> -->
-  <!-- </node> -->
-
   <!-- Combine joint values -->
   <node name="planning_robot_state_publisher" pkg="robot_state_publisher" type="state_publisher" >
     <param name="tf_prefix" value="my_states" />
