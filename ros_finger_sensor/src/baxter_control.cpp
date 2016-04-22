@@ -33,7 +33,7 @@ private:
   double joint_limits_[15][2];
 
   ros::ServiceClient ik_client_right_;
-  baxter_core_msgs::SolvePositionIKRequest ik_serv_;
+  baxter_core_msgs::SolvePositionIK ik_srv_;
 
 public:
   //Constructor
@@ -80,11 +80,11 @@ public:
     tf2_msg.header.stamp = ros::Time::now();
     tf::poseEigenToMsg(goal_pose, tf2_msg.pose);
 
-    ik_serv_.pose_stamp.push_back(tf2_msg);
+    ik_srv_.request.pose_stamp.push_back(tf2_msg);
 
 
     // TODO: not the right way to call this? compile error on this section...
-    if (ik_client_right_.call(ik_serv_))
+    if (ik_client_right_.call(ik_srv_))
     {
       ROS_DEBUG_STREAM_NAMED("testIKServiceCall","ik service called successfully.");
     }
