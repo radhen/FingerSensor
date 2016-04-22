@@ -11,12 +11,18 @@
 #include <tf_conversions/tf_eigen.h>
 
 #include <sensor_msgs/PointCloud2.h>
-#include <pcl/common/common.h>
-#include <pcl_ros/point_cloud.h>
-#include <pcl_ros/transforms.h>
+
+#include <pcl/ModelCoefficients.h>
 #include <pcl/PCLPointCloud2.h>
+#include <pcl/common/common.h>
 #include <pcl/conversions.h>
+#include <pcl/filters/extract_indices.h>
 #include <pcl/filters/passthrough.h>
+#include <pcl/sample_consensus/method_types.h>
+#include <pcl/sample_consensus/model_types.h>
+#include <pcl/segmentation/sac_segmentation.h>
+#include <pcl_ros/point_cloud.h>
+#include <pcl_ros/transforms.h>>
 
 #include <Eigen/Core>
 
@@ -100,25 +106,52 @@ public:
     }
     
     segmentRegionOfInterest();
-    segmentTable();
+
+    int method = 2;
+    segmentTable(method);
     roi_cloud_pub_.publish(roi_cloud_);
 
   }
 
-  void segmentTable()
+  void segmentTable(int method)
   {
-    // could probably do something better... 
-    pcl::PointXYZRGB min_point, max_point;
-    pcl::getMinMax3D(*roi_cloud_, min_point, max_point);
-    // ROS_DEBUG_STREAM_NAMED("segmentTable","min_point = " << min_point);
-    // ROS_DEBUG_STREAM_NAMED("segmentTable","max_point = " << max_point);
+    if (method == 1)
+    {
+      // TODO: would need a way to initialize this and store segmentation limit value.
+      ROS_WARN_STREAM_NAMED("segmentTable","Table must be clear for this method!");
+      pcl::PointXYZRGB min_point, max_point;
+      pcl::getMinMax3D(*roi_cloud_, min_point, max_point);
+      pcl::PassThrough<pcl::PointXYZRGB> pass_z;
+      
+      pass_z.setInputCloud(roi_cloud_);
+      pass_z.setFilterFieldName("z");
+      pass_z.setFilterLimits(0.0075, roi_height_);
+      pass_z.filter(*roi_cloud_);
+    }
 
-    pcl::PassThrough<pcl::PointXYZRGB> pass_z;
-    pass_z.setInputCloud(roi_cloud_);
-    pass_z.setFilterFieldName("z");
-    pass_z.setFilterLimits(0.0075, roi_height_);
-    pass_z.filter(*roi_cloud_);
+    if (method == 2)
+    {
+      // http://www.pointclouds.org/documentation/tutorials/planar_segmentation.php
+      pcl::ModelCoefficients::Ptr coefficients (new pcl::ModelCoefficients);
+      pcl::PointIndices::Ptr inliers (new pcl::PointIndices);
+      pcl::SACSegmentation<pcl::PointXYZRGB> seg;
+      
+      seg.setOptimizeCoefficients(true);
+      seg.setModelType(pcl::SACMODEL_PLANE);
+      seg.setMethodType(pcl::SAC_RANSAC);
+      seg.setDistanceThreshold(0.01);
+      seg.setInputCloud(roi_cloud_);
+      seg.segment(*inliers, *coefficients);
+      
 
+      // http://pointclouds.org/documentation/tutorials/extract_indices.php
+      pcl::ExtractIndices<pcl::PointXYZRGB> extract;
+      extract.setInputCloud(roi_cloud_);
+      extract.setIndices(inliers);
+      extract.setNegative(true);
+      extract.filter(*roi_cloud_);
+      
+    }
   }
 
   void showRegionOfInterest()
