@@ -9,13 +9,13 @@
         <corner x="2.25" y="2.25" z="0" />
         <corner x="-2.25" y="2.25" z="0" />
     </marker>
-    <marker index="17" status="1">
+    <marker index="15" status="1">
         <corner x="-2.25" y="49.55" z="0" />
         <corner x="2.25" y="49.55" z="0" />
         <corner x="2.25" y="54.05" z="0" />
         <corner x="-2.25" y="54.05" z="0" />
     </marker>
-    <marker index="8" status="1">
+    <marker index="16" status="1">
         <corner x="-32.25" y="-2.25" z="0" />
         <corner x="-27.75" y="-2.25" z="0" />
         <corner x="-27.75" y="2.25" z="0" />
