@@ -8,10 +8,12 @@ find_package(catkin REQUIRED COMPONENTS
   rviz_visual_tools
   tf
   tf_conversions
+  eigen_conversions
   pcl_ros
   pcl_conversions
   sensor_msgs
   cmake_modules
+  baxter_core_msgs
 )
 
 find_package(Eigen REQUIRED)
@@ -26,13 +28,21 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
 )
 
-# main experiment
-add_executable(main_experiment 
-  src/main_experiment.cpp
+# baxter control server
+add_executable(baxter_control
+  src/baxter_control.cpp
 )
-target_link_libraries(main_experiment 
+target_link_libraries(baxter_control
+  ${catkin_LIBRARIES}
+)
+
+# perception server
+add_executable(perception_server 
+  src/perception_server.cpp
+)
+target_link_libraries(perception_server 
   ${catkin_LIBRARIES}
   ${PCL_LIBRARIES}
-  )
+)
 
 
