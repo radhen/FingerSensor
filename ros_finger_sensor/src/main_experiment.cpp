@@ -55,7 +55,7 @@ public:
     : nh_("~")
   {
     // all the markers have names, probably want this in config so it's easily changed...
-    qr_marker_ = "ar_marker_2";
+    qr_marker_ = "ar_marker_6";
 
     std::cout << test << std::endl;
     ROS_INFO_STREAM_NAMED("constructor","test...");
@@ -75,7 +75,7 @@ public:
     roi_padding_x_ = 0.05;
     roi_padding_y_ = 0.05;
     roi_padding_z_ = 0.0;
-    
+
     showRegionOfInterest();
 
     // point cloud
@@ -102,7 +102,7 @@ public:
     {
       ROS_ERROR_STREAM_NAMED("processPointCloud","Error converting to desired frame");
     }
-    
+
     segmentRegionOfInterest();
     segmentTable();
     roi_cloud_pub_.publish(roi_cloud_);
@@ -111,7 +111,7 @@ public:
 
   void segmentTable()
   {
-    // could probably do something better... 
+    // could probably do something better...
     pcl::PointXYZRGB min_point, max_point;
     pcl::getMinMax3D(*roi_cloud_, min_point, max_point);
     // ROS_DEBUG_STREAM_NAMED("segmentTable","min_point = " << min_point);
@@ -139,18 +139,18 @@ public:
     pose_offset.translation()[1] += roi_width_ / 2.0 + qr_offset_y_;
     pose_offset.translation()[2] += roi_height_ / 2.0 + qr_offset_z_; // roi_pose_ in qr coord. frame
     roi_pose_ = qr_pose_ * pose_offset; // roi_pose_ in base coord. frame
-    
+
     visual_tools_->publishAxisLabeled(roi_pose_, "roi_pose");
     visual_tools_->publishWireframeCuboid(roi_pose_, roi_depth_, roi_width_, roi_height_, rviz_visual_tools::CYAN);
-    visual_tools_->publishWireframeCuboid(roi_pose_, 
-                                          roi_depth_ - 2 * roi_padding_x_, 
-                                          roi_width_ - 2 * roi_padding_y_, 
-                                          roi_height_ - 2 * roi_padding_z_, 
+    visual_tools_->publishWireframeCuboid(roi_pose_,
+                                          roi_depth_ - 2 * roi_padding_x_,
+                                          roi_width_ - 2 * roi_padding_y_,
+                                          roi_height_ - 2 * roi_padding_z_,
                                           rviz_visual_tools::MAGENTA);
   }
 
   void segmentRegionOfInterest()
-  {   
+  {
     // Filter based on qr location
     pcl::PassThrough<pcl::PointXYZRGB> pass_x;
     pass_x.setInputCloud(roi_cloud_);
