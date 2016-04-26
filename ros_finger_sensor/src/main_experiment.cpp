@@ -67,12 +67,12 @@ public:
     : nh_("~")
   {
 
-
+    //table dimensions or the region of interest
     table_depth_ = 0.45;
     table_width_ = 0.7;
     table_height_ = 0.05;;
 
-    arm_link = "/base_link";
+    arm_link = "/base";
     block_size = 0.04;
     block_poses_.header.stamp = ros::Time::now();
     block_poses_.header.frame_id = arm_link;
@@ -114,7 +114,7 @@ public:
     // Publish a point cloud of data that was considered part of the plane
     plane_pub_ = nh_.advertise< pcl::PointCloud<pcl::PointXYZRGB> >("plane_output", 1);
     // Publish interactive markers for blocks
-    block_pose_pub_ = nh_.advertise< geometry_msgs::PoseArray >("/", 1, true);
+    block_pose_pub_ = nh_.advertise< geometry_msgs::PoseArray >("blockpose", 1);
 
 
 

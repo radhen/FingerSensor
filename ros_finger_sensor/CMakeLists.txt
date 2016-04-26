@@ -37,10 +37,11 @@ target_link_libraries(baxter_control
 )
 
 # perception server
-add_executable(perception_server 
-  src/perception_server.cpp
+add_executable(main_experiment 
+  src/main_experiment.cpp
 )
-target_link_libraries(perception_server 
+
+target_link_libraries(main_experiment
   ${catkin_LIBRARIES}
   ${PCL_LIBRARIES}
 )
