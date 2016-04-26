@@ -164,9 +164,9 @@ public:
 
     // add offsets and display region of interset
     Eigen::Affine3d pose_offset = Eigen::Affine3d::Identity();
-    pose_offset.translation()[0] += roi_depth_ / 2.0 + qr_offset_x_;
-    pose_offset.translation()[1] += roi_width_ / 2.0 + qr_offset_y_;
-    pose_offset.translation()[2] += roi_height_ / 2.0 + qr_offset_z_; // roi_pose_ in qr coord. frame
+    //pose_offset.translation()[0] += roi_depth_ / 2.0 + qr_offset_x_;
+    //pose_offset.translation()[1] += roi_width_ / 2.0 + qr_offset_y_;
+    //pose_offset.translation()[2] += roi_height_ / 2.0 + qr_offset_z_; // roi_pose_ in qr coord. frame
     roi_pose_ = qr_pose_ * pose_offset; // roi_pose_ in base coord. frame
 
     visual_tools_->publishAxisLabeled(roi_pose_, "roi_pose");
