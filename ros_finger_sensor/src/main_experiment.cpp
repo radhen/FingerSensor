@@ -147,7 +147,7 @@ public:
     pcl::PassThrough<pcl::PointXYZRGB> pass_x;
     pass_x.setInputCloud(roi_cloud_);
     pass_x.setFilterFieldName("x");
-    pass_x.setFilterLimits(qr_pose_.translation()[0]-table_height_/5, qr_pose_.translation()[0]+table_depth_);
+    pass_x.setFilterLimits(qr_pose_.translation()[0]-table_depth_/5, qr_pose_.translation()[0]+table_depth_);
     pass_x.filter(*roi_cloud_);
 
     pcl::PassThrough<pcl::PointXYZRGB> pass_y;

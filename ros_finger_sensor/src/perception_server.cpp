@@ -80,9 +80,9 @@ public:
 
     // Setup to filter workspace
     // TODO: add these values to config file in case setup moves...
-    roi_depth_ = 0.60; //region of interest (table + cubes)
-    roi_width_ = 0.80;
-    roi_height_ = 0.50;
+    roi_depth_ = 0.45; //region of interest (table + cubes)
+    roi_width_ = 0.7;
+    roi_height_ = 0.05;
     qr_offset_x_ = -0.075; //offsets from corner of table
     qr_offset_y_ = 0.035;
     qr_offset_z_ = -0.10;
@@ -352,24 +352,24 @@ public:
   void segmentRegionOfInterest()
   {
 
-    std::cout << roi_cloud_->points.size() << std::endl;
+    ROS_INFO("[start region segmentation] Starting with, %d points", (int) roi_cloud_->points.size());
     // Filter based on qr location
     pcl::PassThrough<pcl::PointXYZRGB> pass_x;
     pass_x.setInputCloud(roi_cloud_);
     pass_x.setFilterFieldName("x");
-    pass_x.setFilterLimits(qr_offset_x_ + roi_padding_x_, roi_depth_ + qr_offset_x_ - roi_padding_x_);
+    pass_x.setFilterLimits(qr_offset_x_ - roi_padding_x_, roi_depth_ + qr_offset_x_ - roi_padding_x_);
     pass_x.filter(*roi_cloud_);
 
     pcl::PassThrough<pcl::PointXYZRGB> pass_y;
     pass_y.setInputCloud(roi_cloud_);
     pass_y.setFilterFieldName("y");
-    pass_y.setFilterLimits(qr_offset_y_ + roi_padding_y_, roi_width_ + qr_offset_y_ - roi_padding_y_);
+    pass_y.setFilterLimits(qr_offset_y_ - roi_padding_y_, roi_width_ + qr_offset_y_ - roi_padding_y_);
     pass_y.filter(*roi_cloud_);
 
     pcl::PassThrough<pcl::PointXYZRGB> pass_z;
     pass_z.setInputCloud(roi_cloud_);
     pass_z.setFilterFieldName("z");
-    pass_z.setFilterLimits(qr_offset_z_ + roi_padding_z_, roi_height_ + qr_offset_z_ - roi_padding_z_);
+    pass_z.setFilterLimits(qr_offset_z_ - roi_padding_z_, roi_height_ + qr_offset_z_ - roi_padding_z_);
     pass_z.filter(*roi_cloud_);
 
     // Check if any points remain

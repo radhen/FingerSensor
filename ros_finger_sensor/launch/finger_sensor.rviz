@@ -6,9 +6,6 @@ Panels:
       Expanded:
         - /Global Options1
         - /Status1
-        - /TF1
-        - /TF1/Frames1
-        - /roi_cloud1
       Splitter Ratio: 0.610738
     Tree Height: 895
   - Class: rviz/Selection
@@ -306,11 +303,7 @@ Visualization Manager:
       Frame Timeout: 15
       Frames:
         All Enabled: false
-        ar_marker_13:
-          Value: false
         ar_marker_15:
-          Value: false
-        ar_marker_153:
           Value: false
         ar_marker_16:
           Value: false
@@ -633,11 +626,7 @@ Visualization Manager:
                                       {}
                                   camera_rgb_frame:
                                     camera_rgb_optical_frame:
-                                      ar_marker_13:
-                                        {}
                                       ar_marker_15:
-                                        {}
-                                      ar_marker_153:
                                         {}
                                       ar_marker_16:
                                         {}
@@ -790,35 +779,6 @@ Visualization Manager:
       Use Fixed Frame: true
       Use rainbow: true
       Value: true
-    - Alpha: 1
-      Autocompute Intensity Bounds: true
-      Autocompute Value Bounds:
-        Max Value: 0.0126179
-        Min Value: -0.00624985
-        Value: true
-      Axis: Z
-      Channel Name: intensity
-      Class: rviz/PointCloud2
-      Color: 255; 255; 255
-      Color Transformer: RGB8
-      Decay Time: 0
-      Enabled: true
-      Invert Rainbow: false
-      Max Color: 255; 255; 255
-      Max Intensity: 4096
-      Min Color: 0; 0; 0
-      Min Intensity: 0
-      Name: roi_cloud
-      Position Transformer: XYZ
-      Queue Size: 10
-      Selectable: true
-      Size (Pixels): 1
-      Size (m): 0.01
-      Style: Points
-      Topic: /finger_sensor_test/roi_cloud
-      Use Fixed Frame: true
-      Use rainbow: true
-      Value: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
@@ -843,22 +803,22 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 3.67231
+      Distance: 2.6302
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.06
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 0.214318
-        Y: 0.435229
-        Z: -0.370988
+        X: 0.827587
+        Y: 0.148028
+        Z: -0.359807
       Name: Current View
       Near Clip Distance: 0.01
-      Pitch: 1.4048
+      Pitch: 0.714797
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 3.2336
+      Yaw: 3.9636
     Saved: ~
 Window Geometry:
   Displays:
