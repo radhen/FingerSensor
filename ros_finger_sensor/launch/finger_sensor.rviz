@@ -306,10 +306,14 @@ Visualization Manager:
       Frame Timeout: 15
       Frames:
         All Enabled: false
+        ar_marker_13:
+          Value: false
         ar_marker_15:
           Value: false
+        ar_marker_153:
+          Value: false
         ar_marker_16:
-          Value: true
+          Value: false
         ar_marker_6:
           Value: true
         base:
@@ -629,7 +633,11 @@ Visualization Manager:
                                       {}
                                   camera_rgb_frame:
                                     camera_rgb_optical_frame:
+                                      ar_marker_13:
+                                        {}
                                       ar_marker_15:
+                                        {}
+                                      ar_marker_153:
                                         {}
                                       ar_marker_16:
                                         {}
@@ -847,10 +855,10 @@ Visualization Manager:
         Z: -0.370988
       Name: Current View
       Near Clip Distance: 0.01
-      Pitch: 0.7548
+      Pitch: 1.4048
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 5.7536
+      Yaw: 3.2336
     Saved: ~
 Window Geometry:
   Displays:

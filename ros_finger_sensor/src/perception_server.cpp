@@ -3,7 +3,7 @@
  * Desc      : Simple pick and place for baxter and finger sensor
  * Created   : 2016 - 04 - 14
  */
-
+#include <iostream>
 #include <ros/ros.h>
 #include <rviz_visual_tools/rviz_visual_tools.h>
 
@@ -11,9 +11,10 @@
 #include <tf_conversions/tf_eigen.h>
 
 #include <sensor_msgs/PointCloud2.h>
-
-#include <pcl/ModelCoefficients.h>
+#include <pcl_ros/point_cloud.h>
+#include <pcl_ros/transforms.h>
 #include <pcl/PCLPointCloud2.h>
+#include <pcl/ModelCoefficients.h>
 #include <pcl/common/common.h>
 #include <pcl/conversions.h>
 #include <pcl/filters/extract_indices.h>
@@ -21,8 +22,8 @@
 #include <pcl/sample_consensus/method_types.h>
 #include <pcl/sample_consensus/model_types.h>
 #include <pcl/segmentation/sac_segmentation.h>
-#include <pcl_ros/point_cloud.h>
-#include <pcl_ros/transforms.h>
+#include <pcl/segmentation/extract_clusters.h>
+#include <pcl/kdtree/kdtree_flann.h>
 
 #include <Eigen/Core>
 
@@ -51,12 +52,19 @@ private:
   double roi_padding_x_, roi_padding_y_, roi_padding_z_;
 
   pcl::PointCloud<pcl::PointXYZRGB>::Ptr roi_cloud_;
+  //std::vector<pcl::PointIndices> cluster_indices;
+  //pcl::EuclideanClusterExtraction<pcl::PointXYZRGB> ec;
 
   ros::Publisher roi_cloud_pub_;
   ros::Subscriber raw_cloud_sub_;
   ros::Publisher filtered_pub_; // filtered point cloud for testing the algorithms
   ros::Publisher plane_pub_; // points that were recognized as part of the table
   ros::Publisher block_pose_pub_; // publishes to the block logic server
+
+  double block_size;
+  std::string arm_link;
+  //std::vector<geometry_msgs::Pose> block_poses_;
+  geometry_msgs::PoseArray block_poses_;
 
 
 public:
@@ -78,9 +86,14 @@ public:
     qr_offset_x_ = -0.075; //offsets from corner of table
     qr_offset_y_ = 0.035;
     qr_offset_z_ = -0.10;
-    roi_padding_x_ = 0.05;
-    roi_padding_y_ = 0.05;
-    roi_padding_z_ = 0.0;
+    roi_padding_x_ = 0.5;
+    roi_padding_y_ = 0.5;
+    roi_padding_z_ = 0.5;
+
+    arm_link = "/base_link";
+    block_size = 0.04;
+    block_poses_.header.stamp = ros::Time::now();
+    block_poses_.header.frame_id = arm_link;
 
     showRegionOfInterest();
 
@@ -118,14 +131,13 @@ public:
     }
 
     segmentRegionOfInterest();
-
-    int method = 2;
-    segmentTable(method);
-    roi_cloud_pub_.publish(roi_cloud_);
+    int method = 2; //select method of segmentation
+    segmentTableBlock(method);
+    //roi_cloud_pub_.publish(roi_cloud_);
 
   }
 
-  void segmentTable(int method)
+  void segmentTableBlock(int method)
   {
     if (method == 1)
     {
@@ -155,7 +167,6 @@ public:
       seg.setMethodType(pcl::SAC_RANSAC); // robustness estimator - RANSAC is simple
       seg.setMaxIterations(200);
       seg.setDistanceThreshold(0.005); // determines how close a point must be to the model in order to be considered an inlier
-
 
       int nr_points = roi_cloud_->points.size();
 
@@ -215,80 +226,78 @@ public:
       filtered_pub_.publish(roi_cloud_);
       plane_pub_.publish(cloud_plane);
 
+
+      // for each cluster, see if it is a block
+      for(size_t c = 0; c < cluster_indices.size(); ++c)
+      {
+        // find the outer dimensions of the cluster
+        float xmin = 0; float xmax = 0;
+        float ymin = 0; float ymax = 0;
+        float zmin = 0; float zmax = 0;
+        for(size_t i = 0; i < cluster_indices[c].indices.size(); i++)
+        {
+          int j = cluster_indices[c].indices[i];
+          float x = roi_cloud_->points[j].x;
+          float y = roi_cloud_->points[j].y;
+          float z = roi_cloud_->points[j].z;
+          if(i == 0)
+          {
+            xmin = xmax = x;
+            ymin = ymax = y;
+            zmin = zmax = z;
+          }
+          else
+          {
+            xmin = std::min(xmin, x);
+            xmax = std::max(xmax, x);
+            ymin = std::min(ymin, y);
+            ymax = std::max(ymax, y);
+            zmin = std::min(zmin, z);
+            zmax = std::max(zmax, z);
+          }
+        }
+
+        // Check if these dimensions make sense for the block size specified
+        float xside = xmax-xmin;
+        float yside = ymax-ymin;
+        float zside = zmax-zmin;
+
+        const float tol = 0.01; // 1 cm error tolerance
+        // In order to be part of the block, xside and yside must be between
+        // blocksize and blocksize*sqrt(2)
+        // z must be equal to or smaller than blocksize
+        if(xside > block_size-tol &&
+           xside < block_size*sqrt(2)+tol &&
+                   yside > block_size-tol &&
+           yside < block_size*sqrt(2)+tol &&
+                   zside > tol && zside < block_size+tol)
+        {
+          // If so, then figure out the position and the orientation of the block
+          float angle = atan(block_size/((xside+yside)/2));
+
+          if(yside < block_size)
+            angle = 0.0;
+
+          ROS_INFO_STREAM("[block detection] xside: " << xside << " yside: " << yside << " zside " << zside << " angle: " << angle);
+          // Then add it to our set
+          addBlock( xmin+(xside)/2.0, ymin+(yside)/2.0, zmax - block_size/2.0, angle);
+
+        }
+      }
+
+      if(block_poses_.poses.size() > 0)
+      {
+        block_pose_pub_.publish(block_poses_);
+        ROS_INFO("[block detection] Finished");
+      }
+      else
+      {
+        ROS_INFO("[block detection] Couldn't find any blocks this iteration!");
+      }
+
     }
   }
 
-  void getOrientationOfBlocks()
-  {
-
-        // for each cluster, see if it is a block
-        for(size_t c = 0; c < cluster_indices.size(); ++c)
-        {
-          // find the outer dimensions of the cluster
-          float xmin = 0; float xmax = 0;
-          float ymin = 0; float ymax = 0;
-          float zmin = 0; float zmax = 0;
-          for(size_t i = 0; i < cluster_indices[c].indices.size(); i++)
-          {
-            int j = cluster_indices[c].indices[i];
-            float x = roi_cloud_->points[j].x;
-            float y = roi_cloud_->points[j].y;
-            float z = roi_cloud_->points[j].z;
-            if(i == 0)
-            {
-              xmin = xmax = x;
-              ymin = ymax = y;
-              zmin = zmax = z;
-            }
-            else
-            {
-              xmin = std::min(xmin, x);
-              xmax = std::max(xmax, x);
-              ymin = std::min(ymin, y);
-              ymax = std::max(ymax, y);
-              zmin = std::min(zmin, z);
-              zmax = std::max(zmax, z);
-            }
-          }
-
-          // Check if these dimensions make sense for the block size specified
-          float xside = xmax-xmin;
-          float yside = ymax-ymin;
-          float zside = zmax-zmin;
-
-          const float tol = 0.01; // 1 cm error tolerance
-          // In order to be part of the block, xside and yside must be between
-          // blocksize and blocksize*sqrt(2)
-          // z must be equal to or smaller than blocksize
-          if(xside > block_size-tol &&
-             xside < block_size*sqrt(2)+tol &&
-                     yside > block_size-tol &&
-             yside < block_size*sqrt(2)+tol &&
-                     zside > tol && zside < block_size+tol)
-          {
-            // If so, then figure out the position and the orientation of the block
-            float angle = atan(block_size/((xside+yside)/2));
-
-            if(yside < block_size)
-              angle = 0.0;
-
-            ROS_INFO_STREAM("[block detection] xside: " << xside << " yside: " << yside << " zside " << zside << " angle: " << angle);
-            // Then add it to our set
-            addBlock( xmin+(xside)/2.0, ymin+(yside)/2.0, zmax - block_size/2.0, angle);
-
-          }
-      }
-
-        if(block_poses_.poses.size() > 0)
-        {
-          block_pose_pub_.publish(block_poses_);
-          ROS_INFO("[block detection] Finished");
-        }
-        else
-        {
-          ROS_INFO("[block detection] Couldn't find any blocks this iteration!");
-        }
-  }
 
   void addBlock(float x, float y, float z, float angle)
   {
@@ -342,6 +351,8 @@ public:
 
   void segmentRegionOfInterest()
   {
+
+    std::cout << roi_cloud_->points.size() << std::endl;
     // Filter based on qr location
     pcl::PassThrough<pcl::PointXYZRGB> pass_x;
     pass_x.setInputCloud(roi_cloud_);
