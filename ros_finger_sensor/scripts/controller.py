@@ -10,13 +10,13 @@ from sensor import sensor_node
 from time import time
 
 
-def error(sensor_values):#alignment with figner sensor_values
+def error(sensor_values):#alignment with figner opposite facing sensor_values
     # Sensors 8th and 16th are not used (they point forward)
     diff = [sensor_values[j+8]-sensor_values[j] for j in range(8)]
     err = sum(diff) / len(diff)
     return err
 
-def error1(sensor_values): #alignment with fingertip sensor
+def error1(sensor_values): #alignment with fingerTIP sensor
     err1 = (sensor_values[7]-5400)-(sensor_values[15]-2400)
     return err1
 
@@ -43,17 +43,6 @@ class Controller(object):
 
     def disable(self):
         self.sensor_subscriber.unregister()
-        #rospy.init_node('baxter_controller')
-        #self.limb_name = 'left'
-        #self.other_limb_name = 'right'
-        #self.limb = baxter_interface.Limb(self.limb_name)
-        #self.sensor_subscriber = rospy.Subscriber('/sensor_values',
-                                                 #Int32MultiArray,
-                                                 #self.control)
-
-        #self.err_pub = rospy.Publisher('/error', Float64, queue_size=1)
-        #self.P = P
-        #self.jinv = baxter_kinematics(self.limb_name).jacobian_pseudo_inverse()
 
     def control(self, msg):
         values = msg.data

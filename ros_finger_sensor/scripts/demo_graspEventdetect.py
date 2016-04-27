@@ -1,5 +1,12 @@
-#!/usr/bin/env python
-#repeated grasp attemtps. uses controller and controller_1
+
+
+''' TYPICAL PICK AND PLACE DEMO
+# -------little description------------------------------------------------------------------
+Initalize with pick and place poses (options: initalize || choose previous ones)
+Populate topics /sensor_values and /gripperAperture_values by running sensor.py and gripperApertureNode.py
+prior to this. Used in this demo by the Controller.
+ '''
+
 from __future__ import division, print_function
 from itertools import chain, repeat
 import rospy
@@ -14,16 +21,10 @@ from baxter_interface import CHECK_VERSION
 import getAccEff
 import time
 import serial
-from controller import Controller
 from controller_1 import Controller_1
-from controller_2 import Controller_2
 from getAccEff import FilterValues
 import re
 import matplotlib.pyplot as plt
-import random
-
-#stopCollectingData = False
-#dataCollectLock = threading.Lock()
 
 class CuffOKButton(object):
     def __init__(self, limb_name):
@@ -56,7 +57,6 @@ def limb_pose(limb_name):
     # coordinates using forward kinematics.
     kinematics = baxter_kinematics(limb_name)
     endpoint_pose = kinematics.forward_position_kinematics(joint_pose)
-    #print (endpoint_pose)
     return endpoint_pose
 
 
@@ -76,65 +76,53 @@ class Baxter(object):
         # Calibrate gripper
         self.gripper.calibrate()
 
-    def pick(self, pose, direction=(-1, 0, 0), distance=0.1, controller=None, controller_1 = None, controller_2=None):
+    def pick(self, pose, direction=(0, 0, 1), distance=0.1, controller=None):
         """Go to pose + pick_direction * pick_distance, open, go to pose,
         close, go to pose + pick_direction * pick_distance.
 
         """
-        #print(pose)
+        print(pose)
         pregrasp_pose = self.translate(pose, direction, distance)
-        #print(pregrasp_pose)
-        self.limb.set_joint_position_speed(0.2)
-        #rospy.sleep(1)
+        print(pregrasp_pose)
+        self.limb.set_joint_position_speed(0.1)
         self.move_ik(pregrasp_pose)
         # We want to block end effector opening so that the next
         # movement happens with the gripper fully opened.
         self.gripper.open(block=True)
-        self.limb.set_joint_position_speed(0.08)
-        #self.move_ik(pose)
+        self.limb.set_joint_position_speed(0.05)
+        self.move_ik(pose)
         if controller is not None:
-            print ('controller is there!!')
+            print ('controller ON!!')
             controller.enable()
             rospy.sleep(5)
             controller.disable()
-        if controller_2 is not None:
-            print ('controller_2 is there!!')
-            controller_2.enable()
-            rospy.sleep(5)
-            controller_2.disable()
-
-        if controller_1 is not None:
-            print ('controller_1 is there!!')
-            controller_1.enable()
-            rospy.sleep(5)
-            controller_1.disable()
-        #rospy.sleep(1)
-        #self.gripper.close(block=True)
-        #rospy.sleep(2)
-        #self.gripper.open(block=True)
+        self.gripper.close(block=True)
+        #self.gripper.command_position(45, block=True)
+        rospy.sleep(2)
         #self.move_ik(pregrasp_pose)
 
-    def place(self, pose, direction=(-1, 0, 0), distance=0.1):
+    def place(self, pose, direction=(0, 0, 1), distance=0.1):
         """Go to pose + place_direction * place_distance, go to pose,
         open, go to pose + pick_direction * pick_distance.
 
         """
-        #pregrasp_pose = self.translate(pose, direction, distance)
-        #self.limb.set_joint_position_speed(0.05)
-        #self.move_ik(pregrasp_pose)
-        #self.move((1,0,0),0.1)
-        self.limb.set_joint_position_speed(0.2)
+        pregrasp_pose = self.translate(pose, direction, distance)
+        self.limb.set_joint_position_speed(0.1)
+        self.move_ik(pregrasp_pose)
+        self.limb.set_joint_position_speed(0.05)
         self.move_ik(pose)
-        #self.gripper.open(block=True)
-        #self.move_ik(pregrasp_pose)
+        rospy.sleep(1)
+        self.gripper.command_position(100, block=True)
+        self.move_ik(pregrasp_pose)
+        self.gripper.command_position(100, block=True)
 
-    def move(self, pose, direction=(-1,0,0), distance=0.1):
+    def move(self, direction, distance):
         """Go to pose + place_direction * place_distance.
 
         """
-        #pose = limb_pose(self.limb_name)
+        pose = limb_pose(self.limb_name)
         # rospy.loginfo("limb pose is %d" %pose)
-        #print(pose)
+        print(pose)
         pregrasp_pose = self.translate(pose, direction, distance)
         print(pregrasp_pose)
         self.move_ik(pregrasp_pose)
@@ -199,99 +187,6 @@ class Baxter(object):
                 return None
 
 
-
-    def _compare_ik_fk(self):
-        """All the logged values should match in theory. In practice they're
-        fairly close.
-
-        """
-        kinematics = baxter_kinematics(self.limb_name)
-        rospy.logerr(kinematics.forward_position_kinematics())
-        rospy.logerr(kinematics.forward_position_kinematics(
-            self.limb.joint_angles()))
-        rospy.logerr(self.limb.endpoint_pose())
-
-    def fk(self, joint_angles=None):
-        """Compute end point pose (xyz qxqyqzqw) based on joint angles."""
-        kinematics = baxter_kinematics(self.limb_name)
-        return kinematics.forward_position_kinematics(joint_angles)
-
-    def move_relative(self, pose):
-        """Move endpoint according to the relative pose given.
-
-        Examples
-        --------
-        baxter.move_relative([0, 0, 0, 0, 0, 0, 1])  # No movement
-        baxter.move_relative([x, y, z, 0, 0, 0, 1])  # End effector translation
-        """
-        current_pose = self.limb.endpoint_pose()
-        xyz = current_pose['position']
-        qxqyqzqw = current_pose['orientation']
-        current_pose = list(xyz) + list(qxqyqzqw)
-        final_pose = self._compose(current_pose, pose)
-        self.move_ik(final_pose)
-
-    @staticmethod
-    def _to_quaternion_pose(pose):
-        if len(pose) == 6:
-            q = tf.transformations.quaternion_from_euler(*pose[3:]).tolist()
-            return list(pose[:3]) + q
-        elif len(pose) == 7:
-            return pose
-        else:
-            raise TypeError('Pose needs to be xyzrpy or xyzqxqyqzq')
-
-    def _compose(self, pose1, pose2):
-        """Compose two poses xyz qxqyqzqw. There must be a library to do it."""
-        pose1 = self._to_quaternion_pose(pose1)
-        pose2 = self._to_quaternion_pose(pose2)
-        xyz = [x1 + x2 for x1, x2 in zip(pose1[:3], pose2[:3])]
-        qxqyqzqw = tf.transformations.quaternion_multiply(pose1[3:],
-                                                          pose2[3:]).tolist()
-        return xyz + qxqyqzqw
-
-        # map some keys to the actions like move forward, backward,https://studywolf.wordpress.com/2013/09/02/robot-control-jacobians-velocity-and-force/ left, right, up and
-        # down a little
-    def map_keyboard(self):
-        # initialize interfaces
-        print("Getting robot state... ")
-        rs = baxter_intercontrollerface.RobotEnable(CHECK_VERSION)
-        init_state = rs.state().enabled
-        limb_0 = baxter_interface.Gripper(self.limb_name, CHECK_VERSION)
-
-        done = False
-        print("Enabling robot... ")
-        rs.enable()
-        print("Controlling grippers. Press ? for help, Esc to quit.")
-        while not done and not rospy.is_shutdown():
-            c = baxter_external_devices.getch()
-            if c:
-                if c in ['\x1b', '\x03']:
-                    done = True
-                elif c == 'a':
-                    rospy.loginfo("%s is pressed" %c)
-                    self.move((0,-1,0),0.05)
-                elif c == 'd':
-                    rospy.loginfo("%s is pressed" %c)
-                    self.move((0,1,0),0.05)
-                elif c == 'w':
-                    rospy.loginfo("%s is pressed" %c)
-                    self.move((-1,0,0),0.05)
-                elif c == 's':
-                    rospy.loginfo("%s is pressed" %c)
-                    self.move((1,0,0),0.05)
-                elif c == 'z':
-                    rospy.loginfo("%s is pressed" %c)
-                    self.move((0,0,-1),0.05)
-                elif c == 'x':
-                    rospy.loginfo("%s is pressed" %c)
-                    self.move((0,0,1),0.05)
-
-                else:
-                    print("Not implement it yet...")
-
-        rospy.signal_shutdown("Move.py finished.")
-
 def main(limb_name, reset):
     """
     Parameters
@@ -304,19 +199,15 @@ def main(limb_name, reset):
     """
     # Initialise ros node
     rospy.init_node("pick_and_place", anonymous=False)
-
-    # Either load picking and placing poses from the parameter server
-    # or save them using the 0g mode and the circular buttons on
-    # baxter's cuffs
+    #pick_pose = []
+    #place_pose = []
+    #for ii in range(3):
     if reset or not rospy.has_param('~pick_and_place_poses'):
         rospy.loginfo(
             'Saving picking pose for %s limb' % limb_name)
         pick_pose = limb_pose(limb_name)
         rospy.sleep(1)
         place_pose = limb_pose(limb_name)
-        # Parameter server can't store numpy arrays, so make sure
-        # they're lists of Python floats (specifically not
-        # numpy.float64's). I feel that's a bug in rospy.set_param.
         rospy.set_param('~pick_and_place_poses',
                         {'pick': pick_pose.tolist(),
                          'place': place_pose.tolist()})
@@ -324,42 +215,25 @@ def main(limb_name, reset):
         #rospy.loginfo('place_pose is %s' % place_pose)
     else:
         pick_pose = rospy.get_param('~pick_and_place_poses/pick')
-        place_pose = rospy.get_param('~pick_and_place_poses/place')
+        place_pose =  rospy.get_param('~pick_and_place_poses/place')
 
-    #getDataThread = threading.Thread(target=collectData)
-    #getAccThread = threading.Thread(target=getAccEff.startPrinting)
-
-
-     #with dataCollectLock:
-        #stopCollectingData = False
     b = Baxter(limb_name)
-    #start collecting data
-    #getDataThread.start()
-    #getAccThread.start()
-    c = Controller()
+
     c1 = Controller_1()
-    c2 = Controller_2()
-    #f = FilterValues()
-    #f.start_recording()
-    for i in range(20):
-        print ('this iss the intial pick pose')
-        pick_pose[1]= 0.25286245 #change this for every new exp
-        print (pick_pose)
-        #pick_pose[1] = 0.30986200091872873
-        pick_pose[1] += random.uniform(-1,1)*0.00 ##introduce error in endposition (y axis)
-        print ('ERROR introduced the intial pick pose')
-        print (pick_pose)
-        b.pick(pick_pose, controller=c, controller_1=None, controller_2 = c2)
-        b.place(place_pose)
-    #f.stop_recording()
-    #f.filter()
-    #f.plot()
-    rospy.spin()
-    #with dataCollectLock:
-        #stopCollectingData = True
-    #start collecting data
-    #getDataThread.join()
-    #getAccThread.join()
+
+    f = FilterValues()
+    f.start_recording()
+    #for ii in range(3):
+    b.pick(pick_pose, controller=c1)
+    b.place(place_pose)
+
+    c1.save_centeringerr()
+
+    f.stop_recording()
+    f.convertandsave() #convert to numpy and save the recoreded data
+    f.filter()
+    f.plot()
+
 
 
 if __name__ == "__main__":

@@ -1,3 +1,8 @@
+'''
+Pcontroller. velocity controlled in y axis. preGrasp centering. (uses opposite sensor values)
+'''
+
+
 from __future__ import division, print_function
 from cStringIO import StringIO
 import sys
@@ -8,6 +13,7 @@ import baxter_interface
 from std_msgs.msg import Int32MultiArray, Float64
 from sensor import sensor_node
 from time import time
+import os
 
 
 def error(sensor_values):#alignment with figner sensor_values
@@ -87,8 +93,9 @@ class Controller_1(object):
         return joint_v_dict
 
     def save_centeringerr(self):
+        path = os.getcwd()+'/trialGraspEventDetection_dataFiles'
         self.centeringerr = np.array(self.centeringerr)
-        np.savetxt('centeringerr.txt', self.centeringerr)
+        np.savetxt(path+'/centeringerr.txt', self.centeringerr)
 
 if __name__ == '__main__':
     rospy.init_node('baxter_controller')
