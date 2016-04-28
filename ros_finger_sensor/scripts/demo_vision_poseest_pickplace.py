@@ -1,7 +1,10 @@
-#!/usr/bin/env python
 
-##TYPICAL PICK AND PLACE DEMO
-#initalize with pick and place poses (options: initalize || choose previous ones)
+'''
+TYPICAL PICK AND PLACE DEMO
+# Initalize with pick and place poses (options: initalize || choose previous ones)
+Uses vision to identify block pose
+'''
+
 from __future__ import division, print_function
 from itertools import chain, repeat
 import rospy
@@ -191,7 +194,7 @@ class Blocks(object):
         self.pose = [pose.position.x,
                      pose.position.y,
                      pose.position.z,
-                     -1 ,0, 0, 0]
+                     -0.99,0,0,0]
 
 def main(limb_name, reset):
     """
@@ -206,12 +209,14 @@ def main(limb_name, reset):
     # Initialise ros node
     rospy.init_node("pick_and_place", anonymous=False)
 
-    block = Blocks()
+
     b = Baxter(limb_name)
     place_pose = limb_pose(limb_name).tolist()
+    print (place_pose)
+    block = Blocks()
     rospy.sleep(4)
     pick_pose = block.pose
-    rospy.loginfo('Block pose: %s' % place_pose)
+    rospy.loginfo('Block pose: %s' % pick_pose)
     #import ipdb; ipdb.set_trace()
     b.pick(pick_pose, controller=None)
     b.place(place_pose)
