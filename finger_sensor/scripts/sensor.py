@@ -1,27 +1,24 @@
 #!/usr/bin/env python
 from __future__ import division, print_function
+
 import serial
 import rospy
 from std_msgs.msg import Int32MultiArray, MultiArrayLayout, MultiArrayDimension
 
+
 def collect_data():
-    with serial.Serial('/dev/ttyACM0', 115200, timeout=0.2) as ser:
+    with serial.Serial('/dev/ttyACM0', 115200, timeout=0.3) as ser:
             while True:
                 ser.write(b'm')
-                values = [int(i) for i in ser.readline().strip().split()]
-                if len(values) != 16:
+                line = ser.readline()
+                try:
+                    values = [int(i) for i in line.strip().split()]
+                except ValueError:
+                    rospy.logdebug(line)
                     continue
-                yield values
-    with serial.Serial('/dev/ttyACM0',115200) as ser:
-            try:
-                while True:
-                    ser.write(b'm')
-                    values = [int(i) for i in ser.readline().strip().split()]
-                    if len(values) != 16:
-                        continue
+                if len(values) == 16:
                     yield values
-            except Exception as e:
-                print(e)
+
 
 def sensor_node():
     c = collect_data()
@@ -30,7 +27,9 @@ def sensor_node():
     rate = rospy.Rate(20)
     while not rospy.is_shutdown():
         values = next(c)
-        msg = Int32MultiArray(MultiArrayLayout([MultiArrayDimension('', 16, 1)], 1), values)
+        msg = Int32MultiArray(
+            MultiArrayLayout([MultiArrayDimension('sensor data', 16, 1)], 1),
+            values)
         pub.publish(msg)
         rate.sleep()
 
