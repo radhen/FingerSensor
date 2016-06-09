@@ -11,20 +11,13 @@ from __future__ import division, print_function
 from itertools import chain, repeat
 import rospy
 import baxter_interface
-import baxter_external_devices
 from moveit_commander import conversions
 from baxter_core_msgs.srv import SolvePositionIK, SolvePositionIKRequest
 from baxter_core_msgs.msg import DigitalIOState
-import tf
 from baxter_pykdl import baxter_kinematics
-from baxter_interface import CHECK_VERSION
-import getAccEff
-import time
-import serial
-from controller_1 import Controller_1
+from controller import Controller
 from getAccEff import FilterValues
-import re
-import matplotlib.pyplot as plt
+
 
 class CuffOKButton(object):
     def __init__(self, limb_name):
@@ -57,6 +50,14 @@ def limb_pose(limb_name):
     # coordinates using forward kinematics.
     kinematics = baxter_kinematics(limb_name)
     endpoint_pose = kinematics.forward_position_kinematics(joint_pose)
+    # How is this different from
+    # baxter_interface.Limb(limb_name).endpoint_pose()
+    print()
+    print('baxter_interface endpoint pose:')
+    print(baxter_interface.Limb(limb_name).endpoint_pose())
+    print('pykdl forward kinematics endpoint pose:')
+    print(endpoint_pose)
+    print()
     return endpoint_pose
 
 
@@ -219,7 +220,7 @@ def main(limb_name, reset):
 
     b = Baxter(limb_name)
 
-    c1 = Controller_1()
+    c1 = Controller()
 
     f = FilterValues()
     f.start_recording()
