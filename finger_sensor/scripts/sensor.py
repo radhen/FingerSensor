@@ -8,16 +8,18 @@ from std_msgs.msg import Int32MultiArray, MultiArrayLayout, MultiArrayDimension
 
 def collect_data():
     with serial.Serial('/dev/ttyACM0', 115200, timeout=0.3) as ser:
-            while True:
-                ser.write(b'm')
-                line = ser.readline()
-                try:
-                    values = [int(i) for i in line.strip().split()]
-                except ValueError:
-                    rospy.logdebug(line)
-                    continue
-                if len(values) == 16:
-                    yield values
+        # Give it some time to initialize
+        rospy.sleep(3)
+        while True:
+            ser.write(b'm')
+            line = ser.readline()
+            try:
+                values = [int(i) for i in line.strip().split()]
+            except ValueError:
+                rospy.logdebug(line)
+                continue
+            if len(values) == 16:
+                yield values
 
 
 def sensor_node():
