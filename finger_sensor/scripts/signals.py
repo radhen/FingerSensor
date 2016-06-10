@@ -49,10 +49,12 @@ class FilterSignal(object):
         self.acc_t = deque(maxlen=400)
         self.acc = deque(maxlen=400)
 
-        # 0.55pi rad/sample. TODO Double check arguments
-        self.b1, self.a1 = signal.butter(1, 0.55, 'high', analog=False)
-        # 0.48pi rad/sample
-        self.b, self.a = signal.butter(1, 0.48, 'high', analog=False)
+        # 0.66pi rad/sample (cutoff frequency over nyquist frequency
+        # (ie, half the sampling frequency)). TODO Double check
+        # arguments
+        self.b1, self.a1 = signal.butter(1, 0.66, 'high', analog=False)
+        # 0.5p rad/sample
+        self.b, self.a = signal.butter(1, 0.5, 'high', analog=False)
 
     def handle_acc(self, msg):
         # Check header of Imu msg
