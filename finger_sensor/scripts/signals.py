@@ -50,10 +50,10 @@ class FilterSignal(object):
         self.acc = deque(maxlen=400)
 
         # 0.66pi rad/sample (cutoff frequency over nyquist frequency
-        # (ie, half the sampling frequency)). TODO Double check
-        # arguments
+        # (ie, half the sampling frequency)). For the wrist, 33 Hz /
+        # (100 Hz/ 2). TODO Double check arguments
         self.b1, self.a1 = signal.butter(1, 0.66, 'high', analog=False)
-        # 0.5p rad/sample
+        # 0.5p rad/sample. For the tactile sensor, 5 Hz / (20 Hz / 2).
         self.b, self.a = signal.butter(1, 0.5, 'high', analog=False)
 
     def handle_acc(self, msg):
@@ -75,17 +75,17 @@ class FilterSignal(object):
         self.sensor_values.append(msg.data)
 
     def compute_sai(self):
-        # Is this right? Adding only 6 values at first, expected 7,
-        # all but the front tip...
-        right = sum(self.sensor_values[-1][9:15])
+        # Skipping the front tip sensor (idx 7 and 15)
+        right = sum(self.sensor_values[-1][8:15])
         left = sum(self.sensor_values[-1][0:7])
         self.sair_pub.publish(Float64(right))
         self.sail_pub.publish(Float64(left))
 
     def compute_fai(self):
-        # TODO: Begins by substracting the minimum ever seen, maybe we
-        # "zero" the sensor instead? But with a highpass filter, it
-        # won't matter anyway...
+        # Original code began by substracting the minimum ever seen,
+        # maybe we "zero" the sensor instead? But in fact, with a
+        # highpass filter, it won't matter anyway so we don't do
+        # i... Assumption tested successfully too.
         filtered_values = signal.lfilter(self.b, self.a,
                                          self.sensor_values, axis=0)
         self.fai = filtered_values.sum(axis=1)
