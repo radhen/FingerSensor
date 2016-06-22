@@ -29,6 +29,7 @@
   <run_depend>sensor_msgs</run_depend>
   <run_depend>baxter_core_msgs</run_depend>
   <run_depend>eigen_conversions</run_depend>
+  <run_depend>pick_and_place</run_depend>
 
 
   <export>

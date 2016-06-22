@@ -8,7 +8,7 @@ import tf
 from std_msgs.msg import Header, Int32MultiArray
 from geometry_msgs.msg import Point, Quaternion, Pose, PoseStamped
 
-from .robot import Baxter
+from pap.robot import Baxter
 
 
 class SafetyStop(object):
@@ -18,7 +18,7 @@ class SafetyStop(object):
 
     """
     def __init__(self, topic='/sensor_values'):
-        self.bx = Baxter()
+        self.bx = Baxter('left')
         self.joint_v = {name: 0.0 for name in self.bx.limb.joint_names()}
         self.stop = False
         self.nh = rospy.init_node('SafetyStop')
@@ -43,7 +43,7 @@ class SafetyStop(object):
 
 class ControlArmThroughHand(object):
     def __init__(self, topic='/sensor_values'):
-        self.bx = Baxter()
+        self.bx = Baxter('left')
         self.joint_v = {name: 0.0 for name in self.bx.limb.joint_names()}
         self.nh = rospy.init_node('ArmController')
         self.sensor_sub = rospy.Subscriber(topic,
@@ -53,8 +53,8 @@ class ControlArmThroughHand(object):
         self.br = tf.TransformBroadcaster()
         self.tl = tf.TransformListener()
 
-    def _cartesian_v_from_sensor_values(self, values):
-        log_values = np.log(values)
+    def control_from_sensor_values(self):
+        log_values = np.log(self.values)
         tip = log_values[[7, 15]]
         # Match which side is which. Ideally, if the sign of the diff
         # matches whether the gripper needs to move towards the
@@ -97,16 +97,20 @@ class ControlArmThroughHand(object):
         self.bx.move_ik(new_endpose)
 
     def update_joint_v(self, msg):
-        arr = np.array(msg.data)
-        cartesian_v = self._cartesian_v_from_sensor_values(arr)
-        self.joint_v = self.bx.compute_joint_velocities(cartesian_v)
+        self.values = np.array(msg.data)
 
 
 if __name__ == '__main__':
-    rospy.init_node('SafetyStop')
-    s = SafetyStop()
-    r = rospy.Rate(10)
-    while not rospy.is_shutdown():
-        if s.stop:
-            s.bx.limb.set_joint_velocities(s.joint_v)
-        r.sleep()
+    if False:
+        rospy.init_node('SafetyStop')
+        s = SafetyStop()
+        r = rospy.Rate(10)
+        while not rospy.is_shutdown():
+            if s.stop:
+                s.bx.limb.set_joint_velocities(s.joint_v)
+            r.sleep()
+    else:
+        rospy.init_node('ControlArm')
+        s = ControlArmThroughHand()
+        while not rospy.is_shutdown():
+            s.control_from_sensor_values()
