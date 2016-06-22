@@ -48,7 +48,7 @@ class ControlArmThroughHand(object):
         self.nh = rospy.init_node('ArmController')
         self.sensor_sub = rospy.Subscriber(topic,
                                            Int32MultiArray,
-                                           self.udpate_joint_v,
+                                           self.udpate_sensor_values,
                                            queue_size=1)
         self.br = tf.TransformBroadcaster()
         self.tl = tf.TransformListener()
@@ -87,6 +87,7 @@ class ControlArmThroughHand(object):
                               time,
                               'oriented_object_in_hand',
                               'left_gripper')
+        rospy.loginfo("Lateral shift: {}".format(scalar_diff / 100.0))
         p = (0, scalar_diff / 100, 0.05)
         h = Header()
         h.frame_id = 'oriented_object_in_hand'
@@ -96,7 +97,7 @@ class ControlArmThroughHand(object):
         new_endpose = self.tl.transformPoint("base", PoseStamped(h, pose))
         self.bx.move_ik(new_endpose)
 
-    def update_joint_v(self, msg):
+    def update_sensor_values(self, msg):
         self.values = np.array(msg.data)
 
 
