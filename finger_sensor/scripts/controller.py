@@ -60,7 +60,8 @@ class Controller(object):
         jinv = baxter_kinematics(self.limb_name).jacobian_pseudo_inverse()
         joint_v = np.squeeze(np.asarray(jinv.dot(cartesian_velocities)))
         joint_v_dict = {'{}_{}'.format(self.limb_name, joint_name): val for
-                        joint_name, val in zip(['s0', 's1', 'e0', 'e1', 'w0', 'w1', 'w2'],
+                        joint_name, val in zip(['s0', 's1', 'e0', 'e1',
+                                                'w0', 'w1', 'w2'],
                                                joint_v)}
         joint_v_dict.update(
             {'{}_{}'.format(self.other_limb_name, joint_name): 0.0 for
