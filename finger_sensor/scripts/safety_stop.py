@@ -44,11 +44,11 @@ class SafetyStop(object):
 class ControlArmThroughHand(object):
     def __init__(self, topic='/sensor_values'):
         self.bx = Baxter('left')
-        self.joint_v = {name: 0.0 for name in self.bx.limb.joint_names()}
-        self.nh = rospy.init_node('ArmController')
+        self.values = np.ones(16)
+
         self.sensor_sub = rospy.Subscriber(topic,
                                            Int32MultiArray,
-                                           self.udpate_sensor_values,
+                                           self.update_sensor_values,
                                            queue_size=1)
         self.br = tf.TransformBroadcaster()
         self.tl = tf.TransformListener()
@@ -62,15 +62,15 @@ class ControlArmThroughHand(object):
         # That is, we need left side - right side (using left/right
         # like in l_gripper_{l, r}_finger_tip tfs)
         # TODO: might want to take log(values) for a better behaved controller
-        inside_diff = log_values[8:] - log_values[:7]
+        inside_diff = log_values[8:15] - log_values[:7]
         scalar_diff = sum(inside_diff) / len(inside_diff)
 
         # Take negative for one of the sides, so that angles should
         # match for a parallel object in the gripper
         l_angle, _ = np.polyfit(np.arange(7), -log_values[:7], 1)
-        r_angle, _ = np.polyfit(np.arange(7), log_values[8:], 1)
-        rospy.loginfo('Angle computed from l: {}'.format(l_angle))
-        rospy.loginfo('Angle computed from r: {}'.format(r_angle))
+        r_angle, _ = np.polyfit(np.arange(7), log_values[8:15], 1)
+        rospy.loginfo('Angle computed from l: {}'.format(np.rad2deg(l_angle)))
+        rospy.loginfo('Angle computed from r: {}'.format(np.rad2deg(r_angle)))
         avg_angle = np.arctan((l_angle + r_angle) / 2.0)
 
         # Let's get a frame by the middle of the end effector
@@ -111,7 +111,10 @@ if __name__ == '__main__':
                 s.bx.limb.set_joint_velocities(s.joint_v)
             r.sleep()
     else:
-        rospy.init_node('ControlArm')
+        nh = rospy.init_node('ArmController')
         s = ControlArmThroughHand()
+        rospy.sleep(1)
+        r = rospy.Rate(10)
         while not rospy.is_shutdown():
             s.control_from_sensor_values()
+            r.sleep()
