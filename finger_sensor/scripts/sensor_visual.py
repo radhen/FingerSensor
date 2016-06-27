@@ -27,8 +27,8 @@ class FingerSensorVisualizer(object):
         self.im = self.ax.imshow(np.zeros((2, 8)),
                                  cmap=cm,
                                  interpolation='none',
-                                 vmin=0,
-                                 vmax=2**16 - 1,
+                                 vmin=np.log(5000),
+                                 vmax=np.log(2**16 - 1),
                                  # Doesn't seem to make a difference (?)
                                  animated=True)
         self.fig.colorbar(self.im, orientation='horizontal')
@@ -45,7 +45,7 @@ class FingerSensorVisualizer(object):
             raise ValueError("Need 16 sensor values!")
 
         data = nparr.reshape(2, 8)
-        self.im.set_data(data)
+        self.im.set_data(np.log(data))
         self.ax.set_title(str(data))
         self.fig.canvas.draw()
 

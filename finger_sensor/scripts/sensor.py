@@ -10,6 +10,7 @@ def collect_data():
     with serial.Serial('/dev/ttyACM0', 115200, timeout=0.3) as ser:
         # Give it some time to initialize
         rospy.sleep(3)
+        print('\n'.join(ser.readlines()))
         while True:
             ser.write(b'm')
             line = ser.readline()
