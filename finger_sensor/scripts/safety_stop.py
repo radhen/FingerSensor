@@ -81,21 +81,46 @@ class ControlArmThroughHand(object):
         # tf order.
         # q = Quaternion(q[1], q[2], q[3], q[0])
         q = tf.transformations.quaternion_about_axis(avg_angle, (1, 0, 0))
+        # We had a lot of trouble sending a transform (p, q) from
+        # left_gripper, and then asking for a point in the last frame
+        # in the tf coordinate. Timing issues that I couldn't
+        # solve. Instead, do it manually here:
+        m1 = tf.transformations.quaternion_matrix(q)
+        m1[:3, 3] = p
+        p = (0, scalar_diff / 100, 0.05)
+        m2 = np.eye(4)
+        m2[:3, 3] = p
+        m = m2.dot(m1)
+        # Extract pose now
+        p = Point(*m[:3, 3])
+        q = Quaternion(*tf.transformations.quaternion_from_matrix(m))
         time = rospy.Time.now()
+        h = Header()
+        h.frame_id = 'left_gripper'
+        h.stamp = time
+        pose = Pose(p, q)
+        new_endpose = self.tl.transformPose('base', PoseStamped(h, pose))
+        self.bx.move_ik(new_endpose)
+        return
+        time = rospy.Time.now()
+        
         self.br.sendTransform(p,
                               q,
                               time,
                               'oriented_object_in_hand',
                               'left_gripper')
         rospy.loginfo("Lateral shift: {}".format(scalar_diff / 100.0))
+        # time = self.tl.getLatestCommonTime('base', 'oriented_object_in_hand')
         p = (0, scalar_diff / 100, 0.05)
         h = Header()
         h.frame_id = 'oriented_object_in_hand'
         h.stamp = time
         p = Point(*p)
         pose = Pose(p, Quaternion(0, 0, 0, 1))
-        new_endpose = self.tl.transformPoint("base", PoseStamped(h, pose))
-        self.bx.move_ik(new_endpose)
+        if self.tl.canTransform('base', 'oriented_object_in_hand', time):
+            print('hey')
+            new_endpose = self.tl.transformPoint("base", PoseStamped(h, pose))
+            self.bx.move_ik(new_endpose)
 
     def update_sensor_values(self, msg):
         self.values = np.array(msg.data)
