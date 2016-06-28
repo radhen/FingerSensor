@@ -67,8 +67,8 @@ class ControlArmThroughHand(object):
 
         # Take negative for one of the sides, so that angles should
         # match for a parallel object in the gripper
-        l_angle, _ = np.polyfit(np.arange(7), -log_values[:7], 1)
-        r_angle, _ = np.polyfit(np.arange(7), log_values[8:15], 1)
+        l_angle, _ = np.polyfit(np.arange(7), log_values[:7], 1)
+        r_angle, _ = np.polyfit(np.arange(7), -log_values[8:15], 1)
         rospy.loginfo('Angle computed from l: {}'.format(np.rad2deg(l_angle)))
         rospy.loginfo('Angle computed from r: {}'.format(np.rad2deg(r_angle)))
         avg_angle = np.arctan((l_angle + r_angle) / 2.0)
@@ -94,7 +94,7 @@ class ControlArmThroughHand(object):
         # Extract pose now
         p = Point(*m[:3, 3])
         q = Quaternion(*tf.transformations.quaternion_from_matrix(m))
-        time = rospy.Time.now()
+        time = rospy.Time(0)
         h = Header()
         h.frame_id = 'left_gripper'
         h.stamp = time
