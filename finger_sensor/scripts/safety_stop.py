@@ -101,26 +101,6 @@ class ControlArmThroughHand(object):
         pose = Pose(p, q)
         new_endpose = self.tl.transformPose('base', PoseStamped(h, pose))
         self.bx.move_ik(new_endpose)
-        return
-        time = rospy.Time.now()
-        
-        self.br.sendTransform(p,
-                              q,
-                              time,
-                              'oriented_object_in_hand',
-                              'left_gripper')
-        rospy.loginfo("Lateral shift: {}".format(scalar_diff / 100.0))
-        # time = self.tl.getLatestCommonTime('base', 'oriented_object_in_hand')
-        p = (0, scalar_diff / 100, 0.05)
-        h = Header()
-        h.frame_id = 'oriented_object_in_hand'
-        h.stamp = time
-        p = Point(*p)
-        pose = Pose(p, Quaternion(0, 0, 0, 1))
-        if self.tl.canTransform('base', 'oriented_object_in_hand', time):
-            print('hey')
-            new_endpose = self.tl.transformPoint("base", PoseStamped(h, pose))
-            self.bx.move_ik(new_endpose)
 
     def update_sensor_values(self, msg):
         self.values = np.array(msg.data)
