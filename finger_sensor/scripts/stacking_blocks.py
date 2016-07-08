@@ -70,6 +70,26 @@ class SmartBaxter(Baxter):
                 v_cartesian = [v_base.x, v_base.y, v_base.z, 0, 0, 0]
                 v_joint = self.compute_joint_velocities(v_cartesian)
                 self.limb.set_joint_velocities(v_joint)
+        rospy.loginfo('Went down!')
+        rospy.sleep(0.5)
+        rospy.loginfo('Centering')
+        while True:
+            err = self.error
+            rospy.loginfo("err is {}".format(err))
+            if abs(err) < 1000:
+                break
+            y_v = np.clip(1.0 / 30000.0 * err, -0.08, 0.08)
+            rospy.loginfo("y_v = {}".format(y_v))
+            v = Vector3(0, y_v, 0)
+            h = Header()
+            h.stamp = rospy.Time(0)
+            h.frame_id = '{}_gripper'.format(self.limb_name)
+            v_base = self.tl.transformVector3('base',
+                                              Vector3Stamped(h, v)).vector
+            v_cartesian = [v_base.x, v_base.y, v_base.z, 0, 0, 0]
+            v_joint = self.compute_joint_velocities(v_cartesian)
+            self.limb.set_joint_velocities(v_joint)
+        rospy.loginfo('Centered')
         # self.move_ik(pose)
         rospy.sleep(0.5)
         self.gripper.close(block=True)
