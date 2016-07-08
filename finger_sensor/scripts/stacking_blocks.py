@@ -18,16 +18,34 @@ class SmartBaxter(Baxter):
         super(SmartBaxter, self).__init__(limb_name)
         self.inside = np.zeros(14)
         self.tip = np.zeros(2)
+        self.inside_offset = np.zeros_like(self.inside)
+        self.tip_offset = np.zeros_like(self.tip)
 
         self.sensor_sub = rospy.Subscriber(topic,
                                            Int32MultiArray,
                                            self.update_sensor_values,
                                            queue_size=1)
+        self.zero_sensor()
 
     def update_sensor_values(self, msg):
         values = np.array(msg.data)
-        self.inside = np.concatenate((values[:7], values[8:15]))
-        self.tip = values[[7, 15]]
+        self.inside = np.concatenate((values[:7],
+                                      values[8:15])) - self.inside_offset
+        self.tip = values[[7, 15]] - self.tip_offset
+        self.error = np.mean(self.inside[:7] - self.inside[7:])
+
+    def zero_sensor(self):
+        rospy.loginfo("Zeroing sensor...")
+        inside_vals, tip_vals = [], []
+        r = rospy.Rate(10)
+        while not rospy.is_shutdown() and len(inside_vals) < 10:
+            inside_vals.append(self.inside)
+            tip_vals.append(self.tip)
+            r.sleep()
+        # Center around 5000, so ranges are similar to when not centering
+        self.inside_offset = np.min(inside_vals, axis=0) + 5000
+        self.tip_offset = np.min(tip_vals, axis=0) + 5000
+        rospy.loginfo("Zeroing finished")
 
     def pick(self, pose, direction=(0, 0, 1), distance=0.1):
         pregrasp_pose = self.translate(pose, direction, distance)
@@ -39,7 +57,7 @@ class SmartBaxter(Baxter):
         self.gripper.open(block=True)
         while True:
             rospy.loginfo("Going down to pick")
-            if self.tip.max() > 11000:
+            if self.tip.max() > 10000:
                 break
             else:
                 h = Header()
