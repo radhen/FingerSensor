@@ -99,8 +99,8 @@ class SmartBaxter(Baxter):
                 h = Header()
                 h.stamp = rospy.Time.now()
                 h.frame_id = '{}_gripper'.format(self.limb_name)
-                v = Vector3(0, copysign(0.05, delta), 0)
-                v_base = self.tl.transformVector3('base', Vector3Stamped(h, v))
+                v = Vector3(0, copysign(0.01, delta), 0)
+                v_base = self.tl.transformVector3('base', Vector3Stamped(h, v)).vector
                 v_cartesian = [v_base.x, v_base.y, v_base.z, 0, 0, 0]
                 v_joint = self.compute_joint_velocities(v_cartesian)
                 self.limb.set_joint_velocities(v_joint)
