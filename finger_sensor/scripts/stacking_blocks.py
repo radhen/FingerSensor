@@ -32,7 +32,14 @@ class SmartBaxter(Baxter):
         self.inside = np.concatenate((values[:7],
                                       values[8:15])) - self.inside_offset
         self.tip = values[[7, 15]] - self.tip_offset
-        self.error = np.mean(self.inside[:7] - self.inside[7:])
+        error = np.mean(self.inside[7:] - self.inside[:7])
+        # Experimentally, we need a deadband of about
+        # 314-315. Otherwise it moves left or right with nothing in
+        # between fingers.
+        if abs(error) < 350:
+            self.error = 0
+        else:
+            self.error = error
 
     def zero_sensor(self):
         rospy.loginfo("Zeroing sensor...")
