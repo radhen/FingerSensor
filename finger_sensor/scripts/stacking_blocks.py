@@ -63,7 +63,8 @@ class SmartBaxter(Baxter):
                 h = Header()
                 h.stamp = rospy.Time(0)
                 h.frame_id = '{}_gripper'.format(self.limb_name)
-                v = Vector3(0, 0, 0.01)  # TODO should use direction instead
+                scaled_direction = (di / 100 for di in direction)
+                v = Vector3(*scaled_direction)
                 v_base = self.tl.transformVector3('base',
                                                   Vector3Stamped(h, v)).vector
                 v_cartesian = [v_base.x, v_base.y, v_base.z, 0, 0, 0]
