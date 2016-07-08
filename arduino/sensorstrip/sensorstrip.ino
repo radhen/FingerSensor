@@ -153,7 +153,7 @@ void initSensorStrip(int id)
     if (temp != 0x21){  // Product ID Should be 0x21 for the 4010 sensor
       Serial.print("IR sensor failed to initialize: id = ");
       Serial.print(i);
-      Serial.print(". ");
+      Serial.print(". Should have returned 0x21 but returned ");
       Serial.println(temp, HEX);
     }
     else
