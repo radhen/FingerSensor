@@ -7,10 +7,15 @@ from std_msgs.msg import Int32MultiArray, MultiArrayLayout, MultiArrayDimension
 
 
 def collect_data():
-    with serial.Serial('/dev/ttyACM0', 115200, timeout=0.3) as ser:
+    with serial.Serial('/dev/ttyACM0', 115200) as ser:
         # Give it some time to initialize
-        rospy.sleep(3)
-        print('\n'.join(ser.readlines()))
+        data = []
+        N = 5
+        for i in range(N):
+            data.append(ser.read(ser.inWaiting()))
+            rospy.loginfo("Waiting for {} s more".format(N-i))
+            rospy.sleep(1)
+        print('\n'.join(filter(None, data)))
         while True:
             ser.write(b'm')
             line = ser.readline()
