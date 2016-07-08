@@ -80,12 +80,28 @@ class SmartBaxter(Baxter):
         rospy.loginfo('Went down!')
         rospy.sleep(0.5)
         rospy.loginfo('Centering')
+        # Let's stop centering when we've seen enough zero errors so
+        # far (so that a single spike doesn't stop the process)
+        so_far = 0
         while True:
             err = self.error
             rospy.loginfo("err is {}".format(err))
-            if abs(err) < 1000:
-                break
-            y_v = np.clip(1.0 / 30000.0 * err, -0.08, 0.08)
+            # This needs to be 0, given the deadband
+            if abs(err) == 0:
+                so_far += 1
+                if so_far == 4:
+                    # Not sure if necessary, but command 0 velocity seems
+                    # a good idea
+                    self.limb.set_joint_velocities(
+                        self.compute_joint_velocities([0, 0, 0, 0, 0, 0])
+                    )
+                    break
+            # Controlling the arm: At 1.0 / 30000.0 * err, it's unstable
+            # 40000^{-1} -> unstable
+            # 50000^{-1} -> unstable
+            # 80000^{-1} -> almost stable
+            # 10^{-5} -> decent given the system, etc
+            y_v = np.clip(1.0 / 100000.0 * err, -0.08, 0.08)
             rospy.loginfo("y_v = {}".format(y_v))
             v = Vector3(0, y_v, 0)
             h = Header()
