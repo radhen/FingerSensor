@@ -54,6 +54,16 @@ class SmartBaxter(Baxter):
         self.tip_offset = np.min(tip_vals, axis=0) + 5000
         rospy.loginfo("Zeroing finished")
 
+    def _vector_to(self, vector, to='base'):
+        h = Header()
+        h.stamp = rospy.Time(0)
+        h.frame_id = '{}_gripper'.format(self.limb_name)
+        v = Vector3(*vector)
+        v_base = self.tl.transformVector3(to,
+                                          Vector3Stamped(h, v)).vector
+        v_cartesian = [v_base.x, v_base.y, v_base.z, 0, 0, 0]
+        return v_cartesian
+
     def pick(self, pose, direction=(0, 0, 1), distance=0.1):
         pregrasp_pose = self.translate(pose, direction, distance)
 
@@ -67,14 +77,8 @@ class SmartBaxter(Baxter):
             if self.tip.max() > 10000:
                 break
             else:
-                h = Header()
-                h.stamp = rospy.Time(0)
-                h.frame_id = '{}_gripper'.format(self.limb_name)
                 scaled_direction = (di / 100 for di in direction)
-                v = Vector3(*scaled_direction)
-                v_base = self.tl.transformVector3('base',
-                                                  Vector3Stamped(h, v)).vector
-                v_cartesian = [v_base.x, v_base.y, v_base.z, 0, 0, 0]
+                v_cartesian = self._vector_to(scaled_direction)
                 v_joint = self.compute_joint_velocities(v_cartesian)
                 self.limb.set_joint_velocities(v_joint)
         rospy.loginfo('Went down!')
@@ -103,13 +107,7 @@ class SmartBaxter(Baxter):
             # 10^{-5} -> decent given the system, etc
             y_v = np.clip(1.0 / 100000.0 * err, -0.08, 0.08)
             rospy.loginfo("y_v = {}".format(y_v))
-            v = Vector3(0, y_v, 0)
-            h = Header()
-            h.stamp = rospy.Time(0)
-            h.frame_id = '{}_gripper'.format(self.limb_name)
-            v_base = self.tl.transformVector3('base',
-                                              Vector3Stamped(h, v)).vector
-            v_cartesian = [v_base.x, v_base.y, v_base.z, 0, 0, 0]
+            v_cartesian = self._vector_to((0, y_v, 0))
             v_joint = self.compute_joint_velocities(v_cartesian)
             self.limb.set_joint_velocities(v_joint)
         rospy.loginfo('Centered')
@@ -139,12 +137,7 @@ class SmartBaxter(Baxter):
             if abs(delta) < 2000:
                 done = True
             else:
-                h = Header()
-                h.stamp = rospy.Time.now()
-                h.frame_id = '{}_gripper'.format(self.limb_name)
-                v = Vector3(0, copysign(0.01, delta), 0)
-                v_base = self.tl.transformVector3('base', Vector3Stamped(h, v)).vector
-                v_cartesian = [v_base.x, v_base.y, v_base.z, 0, 0, 0]
+                v_cartesian = self._vector_to((0, copysign(0.01, delta), 0))
                 v_joint = self.compute_joint_velocities(v_cartesian)
                 self.limb.set_joint_velocities(v_joint)
                 r.sleep()
