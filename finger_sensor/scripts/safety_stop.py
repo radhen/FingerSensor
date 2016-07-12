@@ -6,7 +6,8 @@ import numpy as np
 import rospy
 import tf
 from std_msgs.msg import Header, Int32MultiArray
-from geometry_msgs.msg import Point, Quaternion, Pose, PoseStamped
+from geometry_msgs.msg import (Point, Quaternion, Pose, PoseStamped,
+                               Vector3, Vector3Stamped)
 
 from pap.robot import Baxter
 
@@ -106,8 +107,60 @@ class ControlArmThroughHand(object):
         self.values = np.array(msg.data)
 
 
+class VelocityControlArmThroughHand(object):
+    def __init__(self, topic='/sensor_values'):
+        self.bx = Baxter('left')
+        self.values = np.ones(16)
+
+        self.sensor_sub = rospy.Subscriber(topic,
+                                           Int32MultiArray,
+                                           self.update_sensor_values,
+                                           queue_size=1)
+        self.br = tf.TransformBroadcaster()
+        self.tl = tf.TransformListener()
+
+    def _transform_rotation_speed(self, v, to='base'):
+        h = Header()
+        h.stamp = rospy.Time(0)
+        h.frame_id = '{}_gripper'.format(self.bx.limb_name)
+        v = Vector3(*v)
+        v_base = self.tl.transformVector3(to,
+                                          Vector3Stamped(h, v)).vector
+        v_cartesian = [0, 0, 0, v_base.x, v_base.y, v_base.z]
+        return v_cartesian
+
+    def control_from_sensor_values(self):
+        log_values = np.log(self.values)
+        tip = log_values[[7, 15]]
+        # Match which side is which. Ideally, if the sign of the diff
+        # matches whether the gripper needs to move towards the
+        # positive or negative part of the y axis in left_gripper.
+        # That is, we need left side - right side (using left/right
+        # like in l_gripper_{l, r}_finger_tip tfs)
+        # TODO: might want to take log(values) for a better behaved controller
+        inside_diff = log_values[8:15] - log_values[:7]
+        scalar_diff = sum(inside_diff) / len(inside_diff)
+
+        # Take negative for one of the sides, so that angles should
+        # match for a parallel object in the gripper
+        l_angle, _ = np.polyfit(np.arange(7), log_values[:7], 1)
+        r_angle, _ = np.polyfit(np.arange(7), -log_values[8:15], 1)
+        rospy.loginfo('Angle computed from l: {}'.format(np.rad2deg(l_angle)))
+        rospy.loginfo('Angle computed from r: {}'.format(np.rad2deg(r_angle)))
+        avg_angle = np.arctan((l_angle + r_angle) / 2.0)
+        P = 1
+        rotation_speed = (P * avg_angle, 0, 0)
+        v_cartesian = self._transform_rotation_speed(rotation_speed)
+        v_joint = self.bx.compute_joint_velocities(v_cartesian)
+        self.bx.limb.set_joint_velocities(v_joint)
+
+    def update_sensor_values(self, msg):
+        self.values = np.array(msg.data)
+
+
 if __name__ == '__main__':
-    if False:
+    mode = 2
+    if mode == 0:
         rospy.init_node('SafetyStop')
         s = SafetyStop()
         r = rospy.Rate(10)
@@ -117,7 +170,10 @@ if __name__ == '__main__':
             r.sleep()
     else:
         nh = rospy.init_node('ArmController')
-        s = ControlArmThroughHand()
+        if mode == 1:
+            s = ControlArmThroughHand()
+        elif mode == 2:
+            s = VelocityControlArmThroughHand()
         rospy.sleep(1)
         r = rospy.Rate(10)
         while not rospy.is_shutdown():
