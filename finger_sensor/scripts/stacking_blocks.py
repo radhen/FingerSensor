@@ -140,7 +140,7 @@ class SmartBaxter(Baxter):
         # 6) Go to pregrasp
         while True:
             rospy.loginfo("Going down to pick")
-            if self.tip.max() > 5200:
+            if self.tip.max() > 5900:
                 break
             else:
                 scaled_direction = (di / 100 for di in direction)
@@ -171,7 +171,7 @@ class SmartBaxter(Baxter):
         while not done:
             rospy.loginfo("centering")
             delta = self.tip[0] - self.tip[1]
-            if abs(delta) < 200:
+            if abs(delta) < 400:
                 done = True
             else:
                 v_cartesian = self._vector_to((0, copysign(0.01, delta), 0))
@@ -179,8 +179,6 @@ class SmartBaxter(Baxter):
                 self.limb.set_joint_velocities(v_joint)
                 r.sleep()
         rospy.loginfo("centered")
-        rospy.sleep(0.5)
-        self.move_ik(pose)
         rospy.sleep(0.5)
         self.gripper.open(block=True)
         rospy.sleep(0.5)
