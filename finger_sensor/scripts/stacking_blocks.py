@@ -43,15 +43,25 @@ class SmartBaxter(Baxter):
 
     def zero_sensor(self):
         rospy.loginfo("Zeroing sensor...")
+        # Wait a little bit until we get a message from the sensor
+        rospy.sleep(1)
+        self.tip_offset, self.inside_offset = (np.zeros_like(self.tip),
+                                               np.zeros_like(self.inside))
         inside_vals, tip_vals = [], []
         r = rospy.Rate(10)
         while not rospy.is_shutdown() and len(inside_vals) < 10:
-            inside_vals.append(self.inside)
-            tip_vals.append(self.tip)
+            inside, tip = self.inside, self.tip
+            # If there are zero values (most likely becase a message
+            # has not yet been received), skip that. We could also
+            # initialize them with nans to find out if there's a
+            # problem
+            if all(inside) and all(tip):
+                inside_vals.append(inside)
+                tip_vals.append(tip)
             r.sleep()
         # Center around 5000, so ranges are similar to when not centering
-        self.inside_offset = np.min(inside_vals, axis=0) + 5000
-        self.tip_offset = np.min(tip_vals, axis=0) + 5000
+        self.inside_offset = np.min(inside_vals, axis=0) - 5000
+        self.tip_offset = np.min(tip_vals, axis=0) - 5000
         rospy.loginfo("Zeroing finished")
 
     def _vector_to(self, vector, to='base'):
@@ -134,7 +144,7 @@ class SmartBaxter(Baxter):
         while not done:
             rospy.loginfo("centering")
             delta = self.tip[0] - self.tip[1]
-            if abs(delta) < 2000:
+            if abs(delta) < 200:
                 done = True
             else:
                 v_cartesian = self._vector_to((0, copysign(0.01, delta), 0))
