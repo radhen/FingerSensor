@@ -28,15 +28,17 @@ int proximity_freq_ = 0; // range = [0 , 3]. 390.625kHz, 781.250kHz, 1.5625MHz, 
 #define PROXIMITY_RESULT_MSB 0x87  // High byte of proximity measure
 #define PROXIMITY_RESULT_LSB 0x88  // low byte of proximity measure
 #define PROXIMITY_MOD 0x8F  // proximity modulator timing
+#define LOOP_TIME 50  // loop duration in ms
 
 /***** GLOBAL VARIABLES *****/
 int num_devices_;
 unsigned int ambient_value_;
 unsigned int proximity_value_;
+unsigned long start_time;
 
 void setup()
 {
-  Serial.begin(115200);
+  Serial.begin(57600);
   Wire.begin();
 
   // clear serial
@@ -63,18 +65,19 @@ void setup()
 
 void loop()
 {
-  if (Serial.available() > 0) {
-    int incomingbyte = Serial.read();
-    if(incomingbyte == 'm'){
-    // Read sensor values
-    for (int i = 0; i < num_devices_; i++)
-    {
-      readSensorStripValues(i2c_ids_[i]);
-      delay(0);
-    }
-    Serial.println();
-    }
+  //start_time = millis();
+  // Read sensor values
+  for (int i = 0; i < num_devices_; i++)
+  {
+    readSensorStripValues(i2c_ids_[i]);
+    delay(0);
   }
+  Serial.println();
+  /*unsigned long delta = millis() - start_time;
+  if (delta < LOOP_TIME) {
+    Serial.println(LOOP_TIME - delta);
+    delay(delta - LOOP_TIME);
+  }*/
 }
 
 void readSensorStripValues(int id)
