@@ -11,39 +11,36 @@ def collect_data():
         ser.flushInput()
         # Give it some time to initialize
         data = []
-        N = 3
+        N = 1
         for i in range(N):
             data.append(ser.read(ser.inWaiting()))
             rospy.loginfo("Waiting for {} s more".format(N-i))
             rospy.sleep(1)
         print('\n'.join(filter(None, data)))
         buffer = []
-        while True:
+        while not rospy.is_shutdown():
+            buffer.append(ser.read(ser.inWaiting()))
+            foo = ''.join(buffer).splitlines()
             try:
-                buffer.append(ser.read(ser.inWaiting()))
-                foo = ''.join(buffer).splitlines()
-                try:
-                    last_full_line = foo[-2]
-                except IndexError:
-                    continue
-                try:
-                    values = [int(i) for i in last_full_line.split()]
-                    if len(values) == 16:
-                        rospy.loginfo(values)
-                        yield values
-                except ValueError:
-                    rospy.loginfo(last_full_line)
-                    continue
-                buffer = [foo[-1]]
-            except KeyboardInterrupt:
-                break
+                last_full_line = foo[-2]
+            except IndexError:
+                continue
+            try:
+                values = [int(i) for i in last_full_line.split()]
+                if len(values) == 16:
+                    rospy.loginfo(values)
+                    yield values
+            except ValueError:
+                rospy.loginfo(last_full_line)
+                continue
+            buffer = [foo[-1]]
 
 
 def sensor_node():
     c = collect_data()
     pub = rospy.Publisher('/sensor_values', Int32MultiArray, queue_size=1)
     rospy.init_node('sensor_node')
-    rate = rospy.Rate(100)
+    rate = rospy.Rate(50)
     while not rospy.is_shutdown():
         values = next(c)
         msg = Int32MultiArray(
