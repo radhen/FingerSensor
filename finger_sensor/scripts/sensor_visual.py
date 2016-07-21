@@ -1,4 +1,13 @@
 #!/usr/bin/env python
+"""
+Run
+$ export MPLBACKEND="module://gr.matplotlib.backend_gr"
+before running the visualization to use the gr backend
+http://gr-framework.org/tutorials/matplotlib.html
+It has built in double buffering, and works great. It's
+supposed to be fast too, but it maybe feels a tiny bit
+more sluggish, maybe because of the lack of flickering.
+"""
 import rospy
 from std_msgs.msg import Int32MultiArray
 
@@ -32,6 +41,8 @@ class FingerSensorVisualizer(object):
                                  # Doesn't seem to make a difference (?)
                                  animated=True)
         self.fig.colorbar(self.im, orientation='horizontal')
+        self.fig.show()
+        self.fig.canvas.draw()
         # Subscribe last, otherwise the callback might be called
         # before setup is finished...
         self.sub = rospy.Subscriber(topic,
@@ -52,4 +63,4 @@ class FingerSensorVisualizer(object):
 
 if __name__ == '__main__':
     vis = FingerSensorVisualizer()
-    plt.show()
+    rospy.spin()
