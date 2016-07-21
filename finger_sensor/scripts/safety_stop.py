@@ -154,51 +154,67 @@ class VelocityControlArmThroughHand(object):
     def __init__(self, topic='/sensor_values'):
         self.bx = SmartBaxter('left')
 
-        self.sensor_sub = rospy.Subscriber(topic,
-                                           Int32MultiArray,
-                                           self.update_sensor_values,
-                                           queue_size=1)
         self.br = tf.TransformBroadcaster()
         self.tl = tf.TransformListener()
 
-    def _transform_rotation_speed(self, v, to='base'):
+    def _transform_vector(self, v, mode='speed', to='base'):
         h = Header()
         h.stamp = rospy.Time(0)
         h.frame_id = '{}_gripper'.format(self.bx.limb_name)
         v = Vector3(*v)
         v_base = self.tl.transformVector3(to,
                                           Vector3Stamped(h, v)).vector
-        v_cartesian = [0, 0, 0, v_base.x, v_base.y, v_base.z]
+        if mode == 'speed':
+            v_cartesian = np.array([0, 0, 0, v_base.x, v_base.y, v_base.z])
+        elif mode == 'direction':
+            v_cartesian = np.array([v_base.x, v_base.y, v_base.z, 0, 0, 0])
         return v_cartesian
 
     def control_from_sensor_values(self):
-        log_values = np.log(self.values)
-        tip = log_values[[7, 15]]
+        log_values = np.log(self.bx.inside)
         # Match which side is which. Ideally, if the sign of the diff
         # matches whether the gripper needs to move towards the
         # positive or negative part of the y axis in left_gripper.
         # That is, we need left side - right side (using left/right
         # like in l_gripper_{l, r}_finger_tip tfs)
-        # TODO: might want to take log(values) for a better behaved controller
-        inside_diff = log_values[8:15] - log_values[:7]
+        inside_diff = log_values[7:] - log_values[:7]
         scalar_diff = sum(inside_diff) / len(inside_diff)
+
+        rospy.loginfo('scalar diff is {}'.format(scalar_diff))
+        scalar_diff = deadband(scalar_diff, 0.05)
 
         # Take negative for one of the sides, so that angles should
         # match for a parallel object in the gripper
         l_angle, _ = np.polyfit(np.arange(7), log_values[:7], 1)
-        r_angle, _ = np.polyfit(np.arange(7), -log_values[8:15], 1)
+        r_angle, _ = np.polyfit(np.arange(7), -log_values[7:], 1)
         rospy.loginfo('Angle computed from l: {}'.format(np.rad2deg(l_angle)))
         rospy.loginfo('Angle computed from r: {}'.format(np.rad2deg(r_angle)))
         avg_angle = np.arctan((l_angle + r_angle) / 2.0)
+        avg_angle = deadband(avg_angle, 0.1)
+
+        # Essentially, first align, then center
+        if avg_angle == 0.0:
+            # Unstable: 1. Better, but too brusque: 0.1. Not good either: 0.01.
+            P = 0.1
+        else:
+            P = 0.0
+        y_v = np.clip(P * scalar_diff, -0.08, 0.08)
+        rospy.loginfo("y_v = {}".format(y_v))
+        v_cartesian_1 = self._transform_vector((0, y_v, 0), mode='direction')
         P = 1
         rotation_speed = (P * avg_angle, 0, 0)
-        v_cartesian = self._transform_rotation_speed(rotation_speed)
+        v_cartesian_2 = self._transform_vector(rotation_speed, mode='speed')
+        v_cartesian = v_cartesian_1 + v_cartesian_2
         v_joint = self.bx.compute_joint_velocities(v_cartesian)
         self.bx.limb.set_joint_velocities(v_joint)
 
-    def update_sensor_values(self, msg):
-        self.values = np.array(msg.data)
 
+def deadband(value, a, b=None):
+    if abs(value) < a:
+        value = 0.0
+    if b is not None:
+        value = np.clip(value, -b, b)
+    return value
 
 if __name__ == '__main__':
     mode = 2
