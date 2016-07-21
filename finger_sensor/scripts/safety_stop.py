@@ -12,6 +12,58 @@ from geometry_msgs.msg import (Point, Quaternion, Pose, PoseStamped,
 from pap.robot import Baxter
 
 
+class SmartBaxter(Baxter):
+    def __init__(self, limb_name, topic='/sensor_values'):
+        super(SmartBaxter, self).__init__(limb_name)
+        self.inside = np.zeros(14)
+        self.tip = np.zeros(2)
+        self.inside_offset = np.zeros_like(self.inside)
+        self.tip_offset = np.zeros_like(self.tip)
+
+        self.sensor_sub = rospy.Subscriber(topic,
+                                           Int32MultiArray,
+                                           self.update_sensor_values,
+                                           queue_size=1)
+        self.zero_sensor()
+
+    def update_sensor_values(self, msg):
+        values = np.array(msg.data)
+        self.inside = np.concatenate((values[:7],
+                                      values[8:15])) - self.inside_offset
+        self.tip = values[[7, 15]] - self.tip_offset
+        error = np.mean(self.inside[7:] - self.inside[:7])
+        # Experimentally, we need a deadband of about
+        # 314-315. Otherwise it moves left or right with nothing in
+        # between fingers.
+        if abs(error) < 350:
+            self.error = 0
+        else:
+            self.error = error
+
+    def zero_sensor(self):
+        rospy.loginfo("Zeroing sensor...")
+        # Wait a little bit until we get a message from the sensor
+        rospy.sleep(1)
+        self.tip_offset, self.inside_offset = (np.zeros_like(self.tip),
+                                               np.zeros_like(self.inside))
+        inside_vals, tip_vals = [], []
+        r = rospy.Rate(10)
+        while not rospy.is_shutdown() and len(inside_vals) < 10:
+            inside, tip = self.inside, self.tip
+            # If there are zero values (most likely becase a message
+            # has not yet been received), skip that. We could also
+            # initialize them with nans to find out if there's a
+            # problem
+            if all(inside) and all(tip):
+                inside_vals.append(inside)
+                tip_vals.append(tip)
+            r.sleep()
+        # Center around 5000, so ranges are similar to when not centering
+        self.inside_offset = np.min(inside_vals, axis=0) - 5000
+        self.tip_offset = np.min(tip_vals, axis=0) - 5000
+        rospy.loginfo("Zeroing finished")
+
+
 class SafetyStop(object):
     """In theory, if this node is running, no matter what happens, if
     something gets too close to the sensor tip, the robot will stop
@@ -44,32 +96,26 @@ class SafetyStop(object):
 
 class ControlArmThroughHand(object):
     def __init__(self, topic='/sensor_values'):
-        self.bx = Baxter('left')
-        self.values = np.ones(16)
+        self.bx = SmartBaxter('left')
 
-        self.sensor_sub = rospy.Subscriber(topic,
-                                           Int32MultiArray,
-                                           self.update_sensor_values,
-                                           queue_size=1)
         self.br = tf.TransformBroadcaster()
         self.tl = tf.TransformListener()
 
     def control_from_sensor_values(self):
-        log_values = np.log(self.values)
-        tip = log_values[[7, 15]]
+        log_values = np.log(self.bx.inside)
         # Match which side is which. Ideally, if the sign of the diff
         # matches whether the gripper needs to move towards the
         # positive or negative part of the y axis in left_gripper.
         # That is, we need left side - right side (using left/right
         # like in l_gripper_{l, r}_finger_tip tfs)
-        # TODO: might want to take log(values) for a better behaved controller
-        inside_diff = log_values[8:15] - log_values[:7]
+        # We want to take log(values) for a better behaved controller
+        inside_diff = log_values[7:] - log_values[:7]
         scalar_diff = sum(inside_diff) / len(inside_diff)
 
         # Take negative for one of the sides, so that angles should
         # match for a parallel object in the gripper
         l_angle, _ = np.polyfit(np.arange(7), log_values[:7], 1)
-        r_angle, _ = np.polyfit(np.arange(7), -log_values[8:15], 1)
+        r_angle, _ = np.polyfit(np.arange(7), -log_values[7:], 1)
         rospy.loginfo('Angle computed from l: {}'.format(np.rad2deg(l_angle)))
         rospy.loginfo('Angle computed from r: {}'.format(np.rad2deg(r_angle)))
         avg_angle = np.arctan((l_angle + r_angle) / 2.0)
