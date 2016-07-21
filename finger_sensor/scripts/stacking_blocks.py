@@ -140,7 +140,11 @@ class SmartBaxter(Baxter):
         # 6) Go to pregrasp
         while True:
             rospy.loginfo("Going down to pick")
-            if self.tip.max() > 5900:
+            # 5900 as max tip value works well to stack two levels
+            # high. Value experimentally found. Each block is 42 mm
+            # high. Believe 5700 is the right value for two blocks
+            # high.
+            if self.tip.max() > 5700:
                 break
             else:
                 scaled_direction = (di / 100 for di in direction)
@@ -150,21 +154,23 @@ class SmartBaxter(Baxter):
         self.limb.set_joint_velocities(self.compute_joint_velocities([0] * 6))
         rospy.loginfo('Went down!')
         rospy.sleep(0.5)
-        """done = False
-        A = 0.03  # Centering amplitude (SI)
+        A = 0.00  # Centering amplitude (SI)
         theta = pi / 2  # rad/s, so the centering wave takes 4s
         t_0 = rospy.Time.now().to_sec()
         r = rospy.Rate(50)
         tip = []
-        while not done and not rospy.is_shutdown():
+        while not rospy.is_shutdown():
             # We could do something more clever and command the
             # midpoint velocity from now until the next command, but
             # not really that important
-            y_v = A * theta * cos(theta * (rospy.Time.now().to_sec() - t_0))
+            t = rospy.Time.now().to_sec()
+            if theta * (t - t_0) > (2 * pi):
+                break
+            y_v = A * theta * cos(theta * (t - t_0))
             v_cartesian = self._vector_to((0, y_v, 0))
             v_joint = self.compute_joint_velocities(v_cartesian)
             self.limb.set_joint_velocities(v_joint)
-            tip.append(sum(self.tip))"""
+            tip.append(sum(self.tip))
         r = rospy.Rate(20)
         done = False
         #import pdb; pdb.set_trace()
@@ -180,6 +186,8 @@ class SmartBaxter(Baxter):
                 r.sleep()
         rospy.loginfo("centered")
         rospy.sleep(0.5)
+        #self.move_ik(pose)
+        #rospy.sleep(0.5)
         self.gripper.open(block=True)
         rospy.sleep(0.5)
         self.move_ik(preplace_pose)

@@ -149,14 +149,10 @@ class ControlArmThroughHand(object):
         new_endpose = self.tl.transformPose('base', PoseStamped(h, pose))
         self.bx.move_ik(new_endpose)
 
-    def update_sensor_values(self, msg):
-        self.values = np.array(msg.data)
-
 
 class VelocityControlArmThroughHand(object):
     def __init__(self, topic='/sensor_values'):
-        self.bx = Baxter('left')
-        self.values = np.ones(16)
+        self.bx = SmartBaxter('left')
 
         self.sensor_sub = rospy.Subscriber(topic,
                                            Int32MultiArray,
