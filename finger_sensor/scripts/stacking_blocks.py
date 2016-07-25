@@ -20,6 +20,8 @@ class SmartBaxter(Baxter):
         self.tip = np.zeros(2)
         self.inside_offset = np.zeros_like(self.inside)
         self.tip_offset = np.zeros_like(self.tip)
+        # Picking level
+        self.level = None
 
         self.sensor_sub = rospy.Subscriber(topic,
                                            Int32MultiArray,
@@ -144,7 +146,10 @@ class SmartBaxter(Baxter):
             # high. Value experimentally found. Each block is 42 mm
             # high. Believe 5700 is the right value for two blocks
             # high.
-            if self.tip.max() > 5700:
+            # Ideally, we'd have a fully calibrated sensor and these
+            # would become distances
+            limit = {1: 5900, 2: 5700}
+            if self.tip.max() > limit[self.level]:
                 break
             else:
                 scaled_direction = (di / 100 for di in direction)
@@ -194,5 +199,9 @@ class SmartBaxter(Baxter):
 
 
 if __name__ == '__main__':
-    n = PickAndPlaceNode('left', SmartBaxter)
+    smart = True
+    if smart:
+        n = PickAndPlaceNode('left', SmartBaxter)
+    else:
+        n = PickAndPlaceNode('left', Baxter)
     rospy.spin()
