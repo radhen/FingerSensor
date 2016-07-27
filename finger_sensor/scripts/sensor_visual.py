@@ -33,14 +33,25 @@ class FingerSensorVisualizer(object):
         self.nh = rospy.init_node('FingerSensorVisualizer', anonymous=True)
         cm = mpl.cm.get_cmap('YlOrRd')
         self.fig, self.ax = plt.subplots()
-        self.im = self.ax.imshow(np.zeros((2, 8)),
+        self.im = self.ax.imshow(np.log2(2**12 * np.ones((2, 8))),
                                  cmap=cm,
                                  interpolation='none',
-                                 vmin=np.log(5000),
-                                 vmax=np.log(2**16 - 1),
+                                 vmin=np.log2(2**12),
+                                 vmax=np.log2(2**16),
                                  # Doesn't seem to make a difference (?)
                                  animated=True)
-        self.fig.colorbar(self.im, orientation='horizontal')
+        colorbar = self.fig.colorbar(self.im, orientation='horizontal')
+        colorbar.set_ticks(np.arange(12, 17))
+        # LaTeX powers
+        colorbar.set_ticklabels([r'$2^{{{}}}$'.format(i) for i in range(12, 17)])
+        # Big numbers
+        colorbar.set_ticklabels([str(int(i)) for i in np.logspace(12, 16, 5, base=2)])
+
+        self.ax.set_xticks(range(9))
+        self.ax.set_xticklabels(list(range(1, 8)) + ['Tip'])
+        self.ax.set_yticks([0, 1])
+        self.ax.set_yticklabels(['Left', 'Right'])
+        self.ax.set_xlim(-0.5, 7.5)
         self.fig.show()
         self.fig.canvas.draw()
         # Subscribe last, otherwise the callback might be called
@@ -56,11 +67,12 @@ class FingerSensorVisualizer(object):
             raise ValueError("Need 16 sensor values!")
 
         data = nparr.reshape(2, 8)
-        self.im.set_data(np.log(data))
+        self.im.set_data(np.log2(data))
         self.ax.set_title(str(data))
         self.fig.canvas.draw()
 
 
 if __name__ == '__main__':
     vis = FingerSensorVisualizer()
+    plt.show()
     rospy.spin()
