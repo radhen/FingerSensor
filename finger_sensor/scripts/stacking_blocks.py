@@ -141,14 +141,18 @@ class SmartBaxter(Baxter):
         # 5) Open gripper
         # 6) Go to pregrasp
         while True:
-            rospy.loginfo("Going down to pick")
+            rospy.loginfo("Going down to pick (at {})".format(self.tip.max()))
+            # Comment refers to cubelets:
             # 5900 as max tip value works well to stack two levels
             # high. Value experimentally found. Each block is 42 mm
             # high. Believe 5700 is the right value for two blocks
             # high.
             # Ideally, we'd have a fully calibrated sensor and these
             # would become distances
-            limit = {1: 5900, 2: 5700}
+            # Cubelets limits:
+            # limit = {1: 5950, 2: 5750}
+            # YCB limits:
+            limit = {1: 7450, 2: 7100}
             if self.tip.max() > limit[self.level]:
                 break
             else:
@@ -159,8 +163,8 @@ class SmartBaxter(Baxter):
         self.limb.set_joint_velocities(self.compute_joint_velocities([0] * 6))
         rospy.loginfo('Went down!')
         rospy.sleep(0.5)
-        A = 0.00  # Centering amplitude (SI)
-        theta = pi / 2  # rad/s, so the centering wave takes 4s
+        A = 0.0  # Centering amplitude (SI)
+        theta = pi  # rad/s, so the centering wave takes 2s
         t_0 = rospy.Time.now().to_sec()
         r = rospy.Rate(50)
         tip = []
@@ -181,11 +185,12 @@ class SmartBaxter(Baxter):
         #import pdb; pdb.set_trace()
         while not done:
             rospy.loginfo("centering")
-            delta = self.tip[0] - self.tip[1]
-            if abs(delta) < 400:
+            delta = - (self.tip[0] - self.tip[1])
+            rospy.loginfo("Delta is {} ({})".format(delta, 'positive' if delta >= 0 else 'negative'))
+            if abs(delta) < 100:
                 done = True
             else:
-                v_cartesian = self._vector_to((0, copysign(0.01, delta), 0))
+                v_cartesian = self._vector_to((0, copysign(0.005, delta), 0))
                 v_joint = self.compute_joint_velocities(v_cartesian)
                 self.limb.set_joint_velocities(v_joint)
                 r.sleep()
