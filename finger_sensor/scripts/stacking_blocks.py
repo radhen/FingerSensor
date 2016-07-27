@@ -194,6 +194,14 @@ class SmartBaxter(Baxter):
                 v_joint = self.compute_joint_velocities(v_cartesian)
                 self.limb.set_joint_velocities(v_joint)
                 r.sleep()
+        # We're usually over by now, so let's go back a little bit
+        r = rospy.Rate(20)
+        for i in range(2):
+            v_cartesian = self._vector_to((0, -copysign(0.005, delta), 0))
+            v_joint = self.compute_joint_velocities(v_cartesian)
+            self.limb.set_joint_velocities(v_joint)
+            r.sleep()
+        self.limb.set_joint_velocities(self.compute_joint_velocities([0] * 6))
         rospy.loginfo("centered")
         rospy.sleep(0.5)
         #self.move_ik(pose)
