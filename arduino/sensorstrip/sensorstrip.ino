@@ -1,7 +1,7 @@
 /*
  * Copyright 2015 Andy McEvoy
  * Authors : Andy McEvoy ( mcevoy.andy@gmail.com ) 
- *           Jorge Cañardo (jorgecanardo@gmail.com)
+ *           Jorge Cañardo ( jorgecanardo@gmail.com )
  * Desc    : A simple scrip to read values from Dana's sensor strip.
  *           Based on the code produced by Sparkfun for their Infrared Proximity Sensor
  *           https://www.sparkfun.com/products/10901
@@ -10,7 +10,7 @@
 #include <Wire.h>
 
 /***** USER PARAMETERS *****/
-int i2c_ids_[] = {118,119};
+int i2c_ids_[] = {118, 119};
 int ir_current_ = 8; // range = [0, 20]. current = value * 10 mA
 int ambient_light_measurement_rate_ = 7; // range = [0, 7]. 1, 2, 3, 4, 5, 6, 8, 10 samples per second
 int ambient_light_auto_offset_ = 1; // on or off
@@ -28,15 +28,17 @@ int proximity_freq_ = 0; // range = [0 , 3]. 390.625kHz, 781.250kHz, 1.5625MHz, 
 #define PROXIMITY_RESULT_MSB 0x87  // High byte of proximity measure
 #define PROXIMITY_RESULT_LSB 0x88  // low byte of proximity measure
 #define PROXIMITY_MOD 0x8F  // proximity modulator timing
+#define LOOP_TIME 50  // loop duration in ms
 
 /***** GLOBAL VARIABLES *****/
 int num_devices_;
 unsigned int ambient_value_;
 unsigned int proximity_value_;
+unsigned long start_time;
 
 void setup()
 {
-  Serial.begin(115200);
+  Serial.begin(57600);
   Wire.begin();
 
   // clear serial
@@ -46,40 +48,41 @@ void setup()
 
   // get number of i2c devices specified by user
   num_devices_ = sizeof(i2c_ids_) / sizeof(int);
-  //Serial.print("Attached i2c devices: ");
-  //Serial.println(num_devices_);
+  Serial.print("Attached i2c devices: ");
+  Serial.println(num_devices_);
 
   // initialize attached devices
   for (int i = 0; i < num_devices_; i++)
   {
-    //Serial.print("Initializing IR Sensor Strip: ");
-    //Serial.println(i2c_ids_[i]);
+    Serial.print("Initializing IR Sensor Strip: ");
+    Serial.println(i2c_ids_[i]);
     initSensorStrip(i2c_ids_[i]);
   }
-  //Serial.println("Starting main loop...");
-  //Serial.println("strip id, ambient value[0], proximity value[0], ambient value[1], ... ");
+  Serial.println("Starting main loop...");
+  Serial.println("strip id, ambient value[0], proximity value[0], ambient value[1], ... ");
   delay(100);
 }
 
 void loop()
 {
-  if (Serial.available() > 0) {
-    int incomingbyte = Serial.read();
-    if(incomingbyte == 'm'){
-    // Read sensor values
-    for (int i = 0; i < num_devices_; i++)
-    {
-      readSensorStripValues(i2c_ids_[i]);
-      delay(0);
-    }
-    Serial.println();
-    }
+  //start_time = millis();
+  // Read sensor values
+  for (int i = 0; i < num_devices_; i++)
+  {
+    readSensorStripValues(i2c_ids_[i]);
+    delay(0);
   }
+  Serial.println();
+  /*unsigned long delta = millis() - start_time;
+  if (delta < LOOP_TIME) {
+    Serial.println(LOOP_TIME - delta);
+    delay(delta - LOOP_TIME);
+  }*/
 }
 
 void readSensorStripValues(int id)
 {
-  char buf[8];
+  char buf[9];
   //Serial.print(id);
   // read all 8 sensors on the strip
   for (int i = 0; i < 8; i++)
@@ -131,7 +134,7 @@ void initSensorStrip(int id)
   Wire.beginTransmission(id);
   Wire.write(0);
   int errcode = Wire.endTransmission();
-  //Serial.println(errcode); 
+  debug_endTransmission(errcode);
 
   // initialize each IR sensor
   for (int i = 0; i < 8; i++)
@@ -139,7 +142,7 @@ void initSensorStrip(int id)
     // specify IR sensor
     Wire.beginTransmission(id);
     Wire.write(1 << i);
-    Wire.endTransmission();
+    debug_endTransmission(Wire.endTransmission());
     
     //Feel free to play with any of these values, but check the datasheet first!
     writeByte(AMBIENT_PARAMETER, 0x7F);
@@ -150,40 +153,67 @@ void initSensorStrip(int id)
 
     byte temp = readByte(PRODUCT_ID);
     byte proximityregister = readByte(IR_CURRENT);
-    //Serial.println(proximityregister);
     if (temp != 0x21){  // Product ID Should be 0x21 for the 4010 sensor
-      //Serial.print("IR sensor failed to initialize: id = ");
-      //Serial.print(i);
-      //Serial.print(". ");
-      //Serial.println(temp, HEX);
+      Serial.print("IR sensor failed to initialize: id = ");
+      Serial.print(i);
+      Serial.print(". Should have returned 0x21 but returned ");
+      Serial.println(temp, HEX);
     }
     else
     {
-      //Serial.print("IR sensor online: id = ");
-      //Serial.println(i);
+      Serial.print("IR sensor online: id = ");
+      Serial.println(i);
     }
   }
   Wire.beginTransmission(id);
   Wire.write(0);
-  Wire.endTransmission();
+  debug_endTransmission(Wire.endTransmission());
 
 }
 
-void writeByte(byte address, byte data)
+byte writeByte(byte address, byte data)
 {
   Wire.beginTransmission(VCNL4010_ADDRESS);
   Wire.write(address);
   Wire.write(data);
-  Wire.endTransmission();
+  return debug_endTransmission(Wire.endTransmission());
 }
 
 byte readByte(byte address){
   Wire.beginTransmission(VCNL4010_ADDRESS);
   Wire.write(address);
   
-  Wire.endTransmission();
+  debug_endTransmission(Wire.endTransmission());
   Wire.requestFrom(VCNL4010_ADDRESS, 1);
   while(!Wire.available());
   byte data = Wire.read();
   return data;
 }
+
+byte debug_endTransmission(int errcode)
+{
+  if (false)
+  {
+  switch (errcode)
+  {
+    // https://www.arduino.cc/en/Reference/WireEndTransmission
+    case 0:
+      Serial.println("CAVOK");
+      break;
+    case 1:
+      Serial.println("data too long to fit in transmit buffer ");
+      break;
+    case 2:
+      Serial.println("received NACK on transmit of address ");
+      break;
+    case 3:
+      Serial.println("received NACK on transmit of data");
+      break;
+    case 4:
+      Serial.println("other error");
+      break;
+  }
+  }
+  return errcode;
+}
+

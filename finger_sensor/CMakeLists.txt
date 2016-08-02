@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(ros_finger_sensor)
+project(finger_sensor)
 
 find_package(catkin REQUIRED COMPONENTS
   roscpp
@@ -14,6 +14,7 @@ find_package(catkin REQUIRED COMPONENTS
   sensor_msgs
   cmake_modules
   baxter_core_msgs
+  pick_and_place
 )
 
 find_package(Eigen REQUIRED)
