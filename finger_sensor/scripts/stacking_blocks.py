@@ -8,6 +8,7 @@ import numpy as np
 import rospy
 from std_msgs.msg import Int32MultiArray, Header
 from geometry_msgs.msg import Vector3, Vector3Stamped
+from keyboard.msg import Key
 
 from pap.robot import Baxter
 from pap.manager import PickAndPlaceNode
@@ -85,7 +86,7 @@ class SmartBaxter(Baxter):
         # movement happens with the gripper fully opened.
         self.gripper.open(block=True)
         while True:
-            rospy.loginfo("Going down to pick")
+            rospy.loginfo("Going down to pick (at {})".format(self.tip.max()))
             if self.tip.max() > 10000:
                 break
             else:
@@ -124,6 +125,7 @@ class SmartBaxter(Baxter):
             self.limb.set_joint_velocities(v_joint)
         rospy.loginfo('Centered')
         # self.move_ik(pose)
+
         rospy.sleep(0.5)
         self.gripper.close(block=True)
         rospy.sleep(0.5)
@@ -150,9 +152,9 @@ class SmartBaxter(Baxter):
             # Ideally, we'd have a fully calibrated sensor and these
             # would become distances
             # Cubelets limits:
-            # limit = {1: 5950, 2: 5750}
+            limit = {1: 5700, 2: 5500}
             # YCB limits:
-            limit = {1: 7450, 2: 7100}
+            # limit = {1: 7450, 2: 7100, 9: 5520 + 50 - 20}  # 9: side stacking (11000 for bottom)
             if self.tip.max() > limit[self.level]:
                 break
             else:
@@ -211,7 +213,54 @@ class SmartBaxter(Baxter):
         self.move_ik(preplace_pose)
 
 
+class Placement(object):
+    def __init__(self):
+        self.nh = rospy.init_node('placing')
+        self.character = 'k'
+        self.bx = SmartBaxter('left')
+        self.kb_sub = rospy.Subscriber('/keyboard/keyup',
+                                       Key,
+                                       self.keyboard_cb, queue_size=1)
+
+    def keyboard_cb(self, msg):
+        character = chr(msg.code)
+        if character in {'j', 'k', 'l'}:
+            self.character = character
+
+    def run_manual(self):
+        r = rospy.Rate(20)
+        while not rospy.is_shutdown():
+            v = {'k': (0, 0, 0),
+                 'j': (0, 0, 0.02),
+                 'l': (0, 0, -0.02)}[self.character]
+            v_cartesian = self.bx._vector_to(v)
+            v_joint = self.bx.compute_joint_velocities(v_cartesian)
+            self.bx.limb.set_joint_velocities(v_joint)
+            r.sleep()
+
+    def run_auto(self):
+        r = rospy.Rate(20)
+        while not rospy.is_shutdown():
+            for i in range(20):
+                v = (0, 0, 0.02)
+                v_cartesian = self.bx._vector_to(v)
+                v_joint = self.bx.compute_joint_velocities(v_cartesian)
+                self.bx.limb.set_joint_velocities(v_joint)
+                r.sleep()
+            for i in range(20):
+                v = (0, 0, -0.02)
+                v_cartesian = self.bx._vector_to(v)
+                v_joint = self.bx.compute_joint_velocities(v_cartesian)
+                self.bx.limb.set_joint_velocities(v_joint)
+                r.sleep()
+
+
 if __name__ == '__main__':
+    if True:
+        p = Placement()
+        # p.run_manual()
+        p.run_auto()
+    1/0
     smart = True
     if smart:
         n = PickAndPlaceNode('left', SmartBaxter)
