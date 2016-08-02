@@ -29,6 +29,7 @@ class SmartBaxter(Baxter):
                                            self.update_sensor_values,
                                            queue_size=1)
         self.zero_sensor()
+        import ipdb;ipdb.set_trace()
 
     def update_sensor_values(self, msg):
         values = np.array(msg.data)
@@ -165,46 +166,63 @@ class SmartBaxter(Baxter):
         self.limb.set_joint_velocities(self.compute_joint_velocities([0] * 6))
         rospy.loginfo('Went down!')
         rospy.sleep(0.5)
-        A = 0.0  # Centering amplitude (SI)
-        theta = pi  # rad/s, so the centering wave takes 2s
-        t_0 = rospy.Time.now().to_sec()
-        r = rospy.Rate(50)
-        tip = []
-        while not rospy.is_shutdown():
-            # We could do something more clever and command the
-            # midpoint velocity from now until the next command, but
-            # not really that important
-            t = rospy.Time.now().to_sec()
-            if theta * (t - t_0) > (2 * pi):
-                break
-            y_v = A * theta * cos(theta * (t - t_0))
-            v_cartesian = self._vector_to((0, y_v, 0))
-            v_joint = self.compute_joint_velocities(v_cartesian)
-            self.limb.set_joint_velocities(v_joint)
-            tip.append(sum(self.tip))
-        r = rospy.Rate(20)
-        done = False
-        #import pdb; pdb.set_trace()
-        while not done:
-            rospy.loginfo("centering")
-            delta = - (self.tip[0] - self.tip[1])
-            rospy.loginfo("Delta is {} ({})".format(delta, 'positive' if delta >= 0 else 'negative'))
-            if abs(delta) < 100:
-                done = True
-            else:
-                v_cartesian = self._vector_to((0, copysign(0.005, delta), 0))
+        # If side stacking, do that
+        if self.level == 9:
+            done = False
+            while not done:
+                try:
+                    cond = False
+                    if cond:
+                        done = True
+                        break
+                    # Hard code going backwards
+                    scaled_direction = (di / 100 for di in (-1, 0, 0))
+                    v_cartesian = self._vector_to(scaled_direction)
+                    v_joint = self.compute_joint_velocities(v_cartesian)
+                    self.limb.set_joint_velocities(v_joint)
+                except KeyboardInterrupt:
+                    break
+        else:
+            A = 0.0  # Centering amplitude (SI)
+            theta = pi  # rad/s, so the centering wave takes 2s
+            t_0 = rospy.Time.now().to_sec()
+            r = rospy.Rate(50)
+            tip = []
+            while not rospy.is_shutdown():
+                # We could do something more clever and command the
+                # midpoint velocity from now until the next command, but
+                # not really that important
+                t = rospy.Time.now().to_sec()
+                if theta * (t - t_0) > (2 * pi):
+                    break
+                y_v = A * theta * cos(theta * (t - t_0))
+                v_cartesian = self._vector_to((0, y_v, 0))
+                v_joint = self.compute_joint_velocities(v_cartesian)
+                self.limb.set_joint_velocities(v_joint)
+                tip.append(sum(self.tip))
+            r = rospy.Rate(20)
+            done = False
+            #import pdb; pdb.set_trace()
+            while not done:
+                rospy.loginfo("centering")
+                delta = - (self.tip[0] - self.tip[1])
+                rospy.loginfo("Delta is {} ({})".format(delta, 'positive' if delta >= 0 else 'negative'))
+                if abs(delta) < 400:
+                    done = True
+                else:
+                    v_cartesian = self._vector_to((0, copysign(0.005, delta), 0))
+                    v_joint = self.compute_joint_velocities(v_cartesian)
+                    self.limb.set_joint_velocities(v_joint)
+                    r.sleep()
+            # We're usually over by now, so let's go back a little bit
+            r = rospy.Rate(20)
+            for i in range(2):
+                v_cartesian = self._vector_to((0, -copysign(0.005, delta), 0))
                 v_joint = self.compute_joint_velocities(v_cartesian)
                 self.limb.set_joint_velocities(v_joint)
                 r.sleep()
-        # We're usually over by now, so let's go back a little bit
-        r = rospy.Rate(20)
-        for i in range(2):
-            v_cartesian = self._vector_to((0, -copysign(0.005, delta), 0))
-            v_joint = self.compute_joint_velocities(v_cartesian)
-            self.limb.set_joint_velocities(v_joint)
-            r.sleep()
-        self.limb.set_joint_velocities(self.compute_joint_velocities([0] * 6))
-        rospy.loginfo("centered")
+            self.limb.set_joint_velocities(self.compute_joint_velocities([0] * 6))
+            rospy.loginfo("centered")
         rospy.sleep(0.5)
         #self.move_ik(pose)
         #rospy.sleep(0.5)
