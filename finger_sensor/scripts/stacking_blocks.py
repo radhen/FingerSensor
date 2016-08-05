@@ -10,7 +10,7 @@ from std_msgs.msg import Int32MultiArray, Header
 from geometry_msgs.msg import Vector3, Vector3Stamped
 from keyboard.msg import Key
 
-from pap.robot import Baxter
+from pap.robot import Baxter, Jaco
 from pap.manager import PickAndPlaceNode
 
 
@@ -281,7 +281,8 @@ if __name__ == '__main__':
     1/0
     smart = True
     if smart:
-        n = PickAndPlaceNode('left', SmartBaxter)
+        n = PickAndPlaceNode(SmartBaxter('left'))
     else:
-        n = PickAndPlaceNode('left', Baxter)
+        n = PickAndPlaceNode(Jaco)
+        # n = PickAndPlaceNode(Baxter('left'))
     rospy.spin()
