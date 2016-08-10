@@ -8,8 +8,9 @@ import numpy as np
 import rospy
 from std_msgs.msg import Int32MultiArray, Header
 from geometry_msgs.msg import Vector3, Vector3Stamped
+from keyboard.msg import Key
 
-from pap.robot import Baxter
+from pap.robot import Baxter, Jaco
 from pap.manager import PickAndPlaceNode
 
 
@@ -28,6 +29,7 @@ class SmartBaxter(Baxter):
                                            self.update_sensor_values,
                                            queue_size=1)
         self.zero_sensor()
+        import ipdb;ipdb.set_trace()
 
     def update_sensor_values(self, msg):
         values = np.array(msg.data)
@@ -85,7 +87,7 @@ class SmartBaxter(Baxter):
         # movement happens with the gripper fully opened.
         self.gripper.open(block=True)
         while True:
-            rospy.loginfo("Going down to pick")
+            rospy.loginfo("Going down to pick (at {})".format(self.tip.max()))
             if self.tip.max() > 10000:
                 break
             else:
@@ -124,6 +126,7 @@ class SmartBaxter(Baxter):
             self.limb.set_joint_velocities(v_joint)
         rospy.loginfo('Centered')
         # self.move_ik(pose)
+
         rospy.sleep(0.5)
         self.gripper.close(block=True)
         rospy.sleep(0.5)
@@ -150,9 +153,9 @@ class SmartBaxter(Baxter):
             # Ideally, we'd have a fully calibrated sensor and these
             # would become distances
             # Cubelets limits:
-            # limit = {1: 5950, 2: 5750}
+            limit = {1: 5700, 2: 5500}
             # YCB limits:
-            limit = {1: 7450, 2: 7100}
+            # limit = {1: 7450, 2: 7100, 9: 5520 + 50 - 20}  # 9: side stacking (11000 for bottom)
             if self.tip.max() > limit[self.level]:
                 break
             else:
@@ -163,46 +166,63 @@ class SmartBaxter(Baxter):
         self.limb.set_joint_velocities(self.compute_joint_velocities([0] * 6))
         rospy.loginfo('Went down!')
         rospy.sleep(0.5)
-        A = 0.0  # Centering amplitude (SI)
-        theta = pi  # rad/s, so the centering wave takes 2s
-        t_0 = rospy.Time.now().to_sec()
-        r = rospy.Rate(50)
-        tip = []
-        while not rospy.is_shutdown():
-            # We could do something more clever and command the
-            # midpoint velocity from now until the next command, but
-            # not really that important
-            t = rospy.Time.now().to_sec()
-            if theta * (t - t_0) > (2 * pi):
-                break
-            y_v = A * theta * cos(theta * (t - t_0))
-            v_cartesian = self._vector_to((0, y_v, 0))
-            v_joint = self.compute_joint_velocities(v_cartesian)
-            self.limb.set_joint_velocities(v_joint)
-            tip.append(sum(self.tip))
-        r = rospy.Rate(20)
-        done = False
-        #import pdb; pdb.set_trace()
-        while not done:
-            rospy.loginfo("centering")
-            delta = - (self.tip[0] - self.tip[1])
-            rospy.loginfo("Delta is {} ({})".format(delta, 'positive' if delta >= 0 else 'negative'))
-            if abs(delta) < 100:
-                done = True
-            else:
-                v_cartesian = self._vector_to((0, copysign(0.005, delta), 0))
+        # If side stacking, do that
+        if self.level == 9:
+            done = False
+            while not done:
+                try:
+                    cond = False
+                    if cond:
+                        done = True
+                        break
+                    # Hard code going backwards
+                    scaled_direction = (di / 100 for di in (-1, 0, 0))
+                    v_cartesian = self._vector_to(scaled_direction)
+                    v_joint = self.compute_joint_velocities(v_cartesian)
+                    self.limb.set_joint_velocities(v_joint)
+                except KeyboardInterrupt:
+                    break
+        else:
+            A = 0.0  # Centering amplitude (SI)
+            theta = pi  # rad/s, so the centering wave takes 2s
+            t_0 = rospy.Time.now().to_sec()
+            r = rospy.Rate(50)
+            tip = []
+            while not rospy.is_shutdown():
+                # We could do something more clever and command the
+                # midpoint velocity from now until the next command, but
+                # not really that important
+                t = rospy.Time.now().to_sec()
+                if theta * (t - t_0) > (2 * pi):
+                    break
+                y_v = A * theta * cos(theta * (t - t_0))
+                v_cartesian = self._vector_to((0, y_v, 0))
+                v_joint = self.compute_joint_velocities(v_cartesian)
+                self.limb.set_joint_velocities(v_joint)
+                tip.append(sum(self.tip))
+            r = rospy.Rate(20)
+            done = False
+            #import pdb; pdb.set_trace()
+            while not done:
+                rospy.loginfo("centering")
+                delta = - (self.tip[0] - self.tip[1])
+                rospy.loginfo("Delta is {} ({})".format(delta, 'positive' if delta >= 0 else 'negative'))
+                if abs(delta) < 400:
+                    done = True
+                else:
+                    v_cartesian = self._vector_to((0, copysign(0.005, delta), 0))
+                    v_joint = self.compute_joint_velocities(v_cartesian)
+                    self.limb.set_joint_velocities(v_joint)
+                    r.sleep()
+            # We're usually over by now, so let's go back a little bit
+            r = rospy.Rate(20)
+            for i in range(2):
+                v_cartesian = self._vector_to((0, -copysign(0.005, delta), 0))
                 v_joint = self.compute_joint_velocities(v_cartesian)
                 self.limb.set_joint_velocities(v_joint)
                 r.sleep()
-        # We're usually over by now, so let's go back a little bit
-        r = rospy.Rate(20)
-        for i in range(2):
-            v_cartesian = self._vector_to((0, -copysign(0.005, delta), 0))
-            v_joint = self.compute_joint_velocities(v_cartesian)
-            self.limb.set_joint_velocities(v_joint)
-            r.sleep()
-        self.limb.set_joint_velocities(self.compute_joint_velocities([0] * 6))
-        rospy.loginfo("centered")
+            self.limb.set_joint_velocities(self.compute_joint_velocities([0] * 6))
+            rospy.loginfo("centered")
         rospy.sleep(0.5)
         #self.move_ik(pose)
         #rospy.sleep(0.5)
@@ -211,10 +231,58 @@ class SmartBaxter(Baxter):
         self.move_ik(preplace_pose)
 
 
+class Placement(object):
+    def __init__(self):
+        self.nh = rospy.init_node('placing')
+        self.character = 'k'
+        self.bx = SmartBaxter('left')
+        self.kb_sub = rospy.Subscriber('/keyboard/keyup',
+                                       Key,
+                                       self.keyboard_cb, queue_size=1)
+
+    def keyboard_cb(self, msg):
+        character = chr(msg.code)
+        if character in {'j', 'k', 'l'}:
+            self.character = character
+
+    def run_manual(self):
+        r = rospy.Rate(20)
+        while not rospy.is_shutdown():
+            v = {'k': (0, 0, 0),
+                 'j': (0, 0, 0.02),
+                 'l': (0, 0, -0.02)}[self.character]
+            v_cartesian = self.bx._vector_to(v)
+            v_joint = self.bx.compute_joint_velocities(v_cartesian)
+            self.bx.limb.set_joint_velocities(v_joint)
+            r.sleep()
+
+    def run_auto(self):
+        r = rospy.Rate(20)
+        while not rospy.is_shutdown():
+            for i in range(20):
+                v = (0, 0, 0.02)
+                v_cartesian = self.bx._vector_to(v)
+                v_joint = self.bx.compute_joint_velocities(v_cartesian)
+                self.bx.limb.set_joint_velocities(v_joint)
+                r.sleep()
+            for i in range(20):
+                v = (0, 0, -0.02)
+                v_cartesian = self.bx._vector_to(v)
+                v_joint = self.bx.compute_joint_velocities(v_cartesian)
+                self.bx.limb.set_joint_velocities(v_joint)
+                r.sleep()
+
+
 if __name__ == '__main__':
+    if True:
+        p = Placement()
+        # p.run_manual()
+        p.run_auto()
+    1/0
     smart = True
     if smart:
-        n = PickAndPlaceNode('left', SmartBaxter)
+        n = PickAndPlaceNode(SmartBaxter('left'))
     else:
-        n = PickAndPlaceNode('left', Baxter)
+        n = PickAndPlaceNode(Jaco)
+        # n = PickAndPlaceNode(Baxter('left'))
     rospy.spin()

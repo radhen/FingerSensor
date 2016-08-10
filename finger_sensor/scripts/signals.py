@@ -2,6 +2,7 @@
 from __future__ import print_function, division, absolute_import
 
 from collections import deque
+from time import time
 
 import numpy as np
 from scipy import signal
@@ -9,11 +10,15 @@ from scipy import signal
 import rospy
 
 from std_msgs.msg import Int32MultiArray, Float64
+from keyboard.msg import Key
 from sensor_msgs.msg import Imu
 
 
 class FilterSignal(object):
     def __init__(self):
+        self.recording = False
+        self.names = ('sair', 'sail', 'fai', 'faii')
+        self.data = {n: [] for n in self.names}
         # TODO hardcoded for left arm
         self.acc_sub = rospy.Subscriber(
             '/robot/accelerometer/left_accelerometer/state',
@@ -42,6 +47,10 @@ class FilterSignal(object):
             Float64,
             queue_size=5)
 
+        self.kb_sub = rospy.Subscriber('/keyboard/keyup',
+                                       Key,
+                                       self.keyboard_cb, queue_size=10)
+
         # Every queue should hold about 4 seconds of data
         self.sensor_t = deque(maxlen=80)
         self.sensor_values = deque(maxlen=80)
@@ -55,6 +64,15 @@ class FilterSignal(object):
         self.b1, self.a1 = signal.butter(1, 0.66, 'high', analog=False)
         # 0.5p rad/sample. For the tactile sensor, 5 Hz / (20 Hz / 2).
         self.b, self.a = signal.butter(1, 0.5, 'high', analog=False)
+
+    def keyboard_cb(self, msg):
+        character = chr(msg.code)
+        if character == 'r':
+            self.recording = not self.recording
+            if self.recording:
+                rospy.loginfo('Recording enabled')
+            else:
+                rospy.loginfo('Recording disabled')
 
     def handle_acc(self, msg):
         # Check header of Imu msg
@@ -80,6 +98,10 @@ class FilterSignal(object):
         left = sum(self.sensor_values[-1][0:7])
         self.sair_pub.publish(Float64(right))
         self.sail_pub.publish(Float64(left))
+        if self.recording:
+            t = time()
+            self.data['sair'].append((t, right))
+            self.data['sail'].append((t, left))
 
     def compute_fai(self):
         # Original code began by substracting the minimum ever seen,
@@ -89,14 +111,27 @@ class FilterSignal(object):
         filtered_values = signal.lfilter(self.b, self.a,
                                          self.sensor_values, axis=0)
         self.fai = filtered_values.sum(axis=1)
-        self.fai_pub.publish(Float64(self.fai[-1]))
+        val = self.fai[-1]
+        self.fai_pub.publish(Float64(val))
+        if self.recording:
+            t = time()
+            self.data['fai'].append((t, val))
 
     def compute_faii(self):
         filtered_acc = signal.lfilter(self.b1, self.a1, self.acc, axis=0)
         self.faii = np.sqrt((filtered_acc**2).sum(axis=1))
         # Publish just the last value
-        self.faii_pub.publish(Float64(self.faii[-1]))
+        val = self.faii[-1]
+        self.faii_pub.publish(Float64(val))
+        if self.recording:
+            t = time()
+            self.data['faii'].append((t, val))
 
+    def save(self):
+        import pickle
+        with open('/home/jc/ros/baxter_ws/latest_data', 'w') as f:
+            pickle.dump(self.data, f)
+        #print(pickle.dumps(self.data))
 
 if __name__ == '__main__':
     rospy.init_node('filter_signals')
@@ -109,3 +144,4 @@ if __name__ == '__main__':
         f.compute_fai()
         f.compute_faii()
         r.sleep()
+    f.save()
