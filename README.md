@@ -6,5 +6,3 @@ Data from the calibration experiments are in FingerSensor/MATLAB/force_distance_
 Data files for the graspEventDetection experiment are in FingerSensor/ros_finger_sensor/scripts/trialGraspEventDetection_dataFiles folder. (CHECK path for saving!.)
 
 controller_1.py is the main pcontroller, mainly used in the grasp event detection experiment. controller.py and controller_2.py are variants of it using fingertip sensors and used in graspsuccess event experiment. (I wont bother checking them.)
-
-check!
