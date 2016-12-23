@@ -48,8 +48,8 @@ void loop()
   proximityValue = readProximity();
   //Serial.print(ambientValue, DEC);
   //Serial.print("\n");
-  //sprintf(buf, "%6u", proximityValue);
-  //Serial.print(buf);
+  sprintf(buf, "%6u", proximityValue);
+  Serial.print(buf);
   Serial.println(proximityValue, DEC);
   //Serial.print('\n');
   // delay(100);  // You may want to uncomment this for visibility
